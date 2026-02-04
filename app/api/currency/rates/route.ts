@@ -1,13 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return null
+  return createClient(url, key)
+}
 
 export async function GET() {
   try {
+    const supabase = getSupabase()
+    if (!supabase) return NextResponse.json({
+      rates: {
+        USD: 1,
+        RWF: 1300,
+        EUR: 0.95,
+        GBP: 0.85,
+        KES: 135,
+        UGX: 4200,
+        ZAR: 18.5,
+        TZS: 2650
+      },
+      lastUpdated: new Date().toISOString()
+    }, { status: 200 })
+
     const { data, error } = await supabase
       .from('currency_rates')
       .select('*')
@@ -18,7 +35,7 @@ export async function GET() {
     if (error) {
       console.log('[v0] Error fetching rates:', error)
       return NextResponse.json(
-        { 
+        {
           rates: {
             USD: 1,
             RWF: 1300,
@@ -59,6 +76,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const supabase = getSupabase()
+    if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
 
     const { error } = await supabase
       .from('currency_rates')

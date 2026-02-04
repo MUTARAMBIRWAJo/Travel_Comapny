@@ -4,7 +4,10 @@ import { NextResponse } from "next/server"
 
 export async function POST() {
   try {
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
+    const supabase = createClient(url, key)
 
     const cookieStore = await cookies()
     const sessionToken = cookieStore.get("session_token")?.value

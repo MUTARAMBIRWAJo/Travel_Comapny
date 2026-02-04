@@ -11,7 +11,10 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export async function createUser(email: string, password: string, name: string, role: string, companyId?: string) {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error('Supabase not configured')
+  const supabase = createClient(url, key)
 
   const passwordHash = await hashPassword(password)
 
@@ -36,7 +39,10 @@ export async function createUser(email: string, password: string, name: string, 
 }
 
 export async function getUserByEmail(email: string) {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error('Supabase not configured')
+  const supabase = createClient(url, key)
 
   const { data: user, error } = await supabase.from("users").select("*").eq("email", email.toLowerCase()).single()
 

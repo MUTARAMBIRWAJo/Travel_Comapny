@@ -5,7 +5,19 @@ import { createClient } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
 
 export default async function TravelerDashboard() {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) {
+    console.warn('[v0] Supabase not configured for TravelerDashboard')
+    return (
+      <div className="p-4">
+        <h2 className="text-2xl font-bold">My Travels</h2>
+        <p className="text-muted-foreground">Supabase not configured</p>
+      </div>
+    )
+  }
+
+  const supabase = createClient(url, key)
 
   const cookieStore = await cookies()
   const sessionToken = cookieStore.get("session_token")?.value
@@ -19,7 +31,7 @@ export default async function TravelerDashboard() {
     }
   }
 
-  let upcomingTrips = []
+  let upcomingTrips: { id: string; destination: string; startDate: string; endDate: string; status: string }[] = []
   let tripCount = 0
   let totalMiles = 0
   let totalSpent = 0

@@ -3,7 +3,19 @@ import { Users, BarChart3, TrendingUp, AlertCircle } from "lucide-react"
 import { createClient } from "@supabase/supabase-js"
 
 export default async function AdminDashboard() {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) {
+    console.warn('[v0] Supabase not configured for AdminDashboard')
+    return (
+      <div className="p-4">
+        <h2 className="text-2xl font-bold">Admin Dashboard</h2>
+        <p className="text-muted-foreground">Supabase not configured</p>
+      </div>
+    )
+  }
+
+  const supabase = createClient(url, key)
 
   const [usersResp, tripsResp, requestsResp, companiesResp, invoicesResp] = await Promise.all([
     supabase.from("users").select("id", { count: "exact", head: true }),

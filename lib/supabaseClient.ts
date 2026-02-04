@@ -3,11 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 // Default fallback data for when CMS tables don't exist
 const DEFAULT_SETTINGS = {
@@ -41,6 +37,11 @@ const DEFAULT_SETTINGS = {
 // Helper to fetch global settings
 export async function getGlobalSettings() {
   try {
+    if (!supabase) {
+      console.log('[v0] Supabase not configured (getGlobalSettings), using fallback defaults');
+      return DEFAULT_SETTINGS;
+    }
+
     const { data, error } = await supabase
       .from('cms_global_settings')
       .select('*')
@@ -70,6 +71,11 @@ export async function getGlobalSettings() {
 // Helper to fetch a page with sections
 export async function getPageWithSections(pageKey: string) {
   try {
+    if (!supabase) {
+      console.log('[v0] Supabase not configured (getPageWithSections)');
+      return null;
+    }
+
     const { data: pageData, error: pageError } = await supabase
       .from('cms_pages')
       .select('*')
@@ -131,6 +137,11 @@ const DEFAULT_SERVICES = [
 // Helper to fetch all services
 export async function getServices() {
   try {
+    if (!supabase) {
+      console.log('[v0] Supabase not configured (getServices), using fallback defaults');
+      return DEFAULT_SERVICES;
+    }
+
     const { data, error } = await supabase
       .from('cms_services')
       .select('*')
@@ -176,6 +187,11 @@ const DEFAULT_DESTINATIONS = [
 // Helper to fetch all destinations
 export async function getDestinations() {
   try {
+    if (!supabase) {
+      console.log('[v0] Supabase not configured (getDestinations), using fallback defaults');
+      return DEFAULT_DESTINATIONS;
+    }
+
     const { data, error } = await supabase
       .from('cms_destinations')
       .select('*')
@@ -221,6 +237,11 @@ const DEFAULT_TESTIMONIALS = [
 // Helper to fetch featured testimonials
 export async function getTestimonials(featured = false) {
   try {
+    if (!supabase) {
+      console.log('[v0] Supabase not configured (getTestimonials), using fallback defaults');
+      return featured ? DEFAULT_TESTIMONIALS.filter(t => t.is_featured) : DEFAULT_TESTIMONIALS;
+    }
+
     let query = supabase
       .from('cms_testimonials')
       .select('*')
@@ -273,6 +294,11 @@ const DEFAULT_PACKAGES = [
 // Helper to fetch all packages
 export async function getPackages() {
   try {
+    if (!supabase) {
+      console.log('[v0] Supabase not configured (getPackages), using fallback defaults');
+      return DEFAULT_PACKAGES;
+    }
+
     const { data, error } = await supabase
       .from('packages')
       .select('*')
@@ -304,6 +330,11 @@ export async function getPackages() {
 // Helper to fetch FAQs by category
 export async function getFAQs(category?: string) {
   try {
+    if (!supabase) {
+      console.log('[v0] Supabase not configured (getFAQs), using fallback defaults');
+      return [];
+    }
+
     let query = supabase
       .from('cms_faqs')
       .select('*')
@@ -347,10 +378,10 @@ export const EXCHANGE_RATES: Record<string, number> = {
 
 export function convertCurrency(amount: number, fromCurrency: string, toCurrency: string): number {
   if (fromCurrency === toCurrency) return amount;
-  
+
   const fromRate = EXCHANGE_RATES[fromCurrency] || 1;
   const toRate = EXCHANGE_RATES[toCurrency] || 1;
-  
+
   const amountInUSD = amount / fromRate;
   return amountInUSD * toRate;
 }

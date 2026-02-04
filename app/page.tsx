@@ -98,11 +98,9 @@ export default async function Home() {
                 return (
                   <Card key={service.id} className="card-hover flex flex-col overflow-hidden group">
                     <div className="relative h-40 bg-gradient-to-br from-primary/20 to-secondary/20 overflow-hidden">
-                      <img
-                        src={backgroundImages[idx % backgroundImages.length] || "/placeholder.svg"}
-                        alt={service.title_en}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
+                      <div className="absolute inset-0">
+                        <Image src={backgroundImages[idx % backgroundImages.length] || "/placeholder.svg"} alt={service.title_en} fill className="object-cover group-hover:scale-110 transition-transform duration-300" />
+                      </div>
                       <div className="absolute inset-0 bg-black/20"></div>
                     </div>
                     <CardHeader>

@@ -1,22 +1,27 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return createClient(url, key)
+}
 
 // GET all conversations for a user
 export async function GET(request: NextRequest) {
   try {
     const userId = request.nextUrl.searchParams.get('userId')
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID is required' },
         { status: 400 }
       )
     }
+
+    const supabase = getSupabase()
+    if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
 
     const { data, error } = await supabase
       .from('conversations')
@@ -52,6 +57,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { travelerId, adminId, officerId, serviceRequestId, title } = body
+
+    const supabase = getSupabase()
+    if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
 
     const { data, error } = await supabase
       .from('conversations')

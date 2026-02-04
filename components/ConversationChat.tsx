@@ -23,7 +23,7 @@ interface Message {
 }
 
 interface ConversationChatProps {
-  conversationId: string
+  conversationId: string | null
   userId: string
   userRole: string
   onNewMessage?: (message: Message) => void
@@ -43,15 +43,6 @@ export function ConversationChat({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchMessages()
-    markAsRead()
-
-    // Poll for new messages every 3 seconds
-    const interval = setInterval(fetchMessages, 3000)
-    return () => clearInterval(interval)
-  }, [fetchMessages, markAsRead])
-
-  useEffect(() => {
     scrollToBottom()
   }, [messages])
 
@@ -60,6 +51,7 @@ export function ConversationChat({
   }
 
   const fetchMessages = useCallback(async () => {
+    if (!conversationId) return
     try {
       const response = await fetch(
         `/api/conversations/messages?conversationId=${conversationId}`
@@ -77,6 +69,7 @@ export function ConversationChat({
   }, [conversationId])
 
   const markAsRead = useCallback(async () => {
+    if (!conversationId) return
     try {
       await fetch(`/api/conversations/messages`, {
         method: 'PATCH',
@@ -88,8 +81,18 @@ export function ConversationChat({
     }
   }, [conversationId, userId])
 
+  useEffect(() => {
+    fetchMessages()
+    markAsRead()
+
+    // Poll for new messages every 3 seconds
+    const interval = setInterval(fetchMessages, 3000)
+    return () => clearInterval(interval)
+  }, [fetchMessages, markAsRead])
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!conversationId) return
     if (!newMessage.trim()) return
 
     setSending(true)

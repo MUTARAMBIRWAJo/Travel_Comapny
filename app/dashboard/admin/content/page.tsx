@@ -12,8 +12,8 @@ import { MediaUploader } from "@/components/admin/MediaUploader"
 export default function ContentManagementPage() {
   const [showPackageEditor, setShowPackageEditor] = useState(false)
   const [showServiceEditor, setShowServiceEditor] = useState(false)
-  const [selectedPackage, setSelectedPackage] = useState(null)
-  const [selectedService, setSelectedService] = useState(null)
+  const [selectedPackage, setSelectedPackage] = useState<any | null>(null)
+  const [selectedService, setSelectedService] = useState<any | null>(null)
   return (
     <div className="space-y-8">
       <div>
@@ -48,7 +48,7 @@ export default function ContentManagementPage() {
               <h3 className="text-2xl font-bold">Travel Packages</h3>
               <p className="text-muted-foreground">Create and manage travel packages</p>
             </div>
-            <Button 
+            <Button
               className="btn-primary"
               onClick={() => {
                 setSelectedPackage(null)
@@ -110,7 +110,7 @@ export default function ContentManagementPage() {
               <h3 className="text-2xl font-bold">Services</h3>
               <p className="text-muted-foreground">Manage service offerings</p>
             </div>
-            <Button 
+            <Button
               className="btn-primary"
               onClick={() => {
                 setSelectedService(null)

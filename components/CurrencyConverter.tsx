@@ -11,7 +11,6 @@ export function CurrencyConverter() {
   const [amount, setAmount] = useState<number>(100)
   const [fromCurrency, setFromCurrency] = useState<string>('USD')
   const [toCurrency, setToCurrency] = useState<string>('RWF')
-  const [result, setResult] = useState<number>(0)
 
   const currencies = Object.keys(EXCHANGE_RATES)
   const result = useMemo(() => convertCurrency(amount, fromCurrency, toCurrency), [amount, fromCurrency, toCurrency])

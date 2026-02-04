@@ -1,15 +1,20 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return createClient(url, key)
+}
 
 // GET all officers
 export async function GET(request: NextRequest) {
   try {
     const specialization = request.nextUrl.searchParams.get('specialization')
+
+    const supabase = getSupabase()
+    if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
 
     let query = supabase
       .from('users')
@@ -61,6 +66,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const supabase = getSupabase()
+    if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
 
     const { data, error } = await supabase
       .from('officer_specializations')

@@ -4,13 +4,16 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { fullName, email, password, role } = await request.json()
+    const { fullName, email, password, role } = (await request.json()) as { fullName: string; email: string; password: string; role: string }
 
     if (!fullName || !email || !password || !role) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
+    const supabase = createClient(url, key)
 
     const { data: existingUser, error: checkError } = await supabase
       .from("users")
@@ -33,7 +36,7 @@ export async function POST(request: NextRequest) {
       corporate_employee: "corporate_employee",
     }
 
-    const dbRole = roleMapping[role] || "traveler"
+    const dbRole = roleMapping[role as keyof typeof roleMapping] || "traveler"
 
     const passwordHash = await bcrypt.hash(password, 10)
 

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return null
+  return createClient(url, key)
+}
 
 // Simple HTML to PDF conversion (in production use a library like jsPDF or pdfkit)
 function generatePdfContent(requestData: any, processingStatus: string): string {
@@ -91,6 +93,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { serviceRequestId, processingStatus, adminNotes } = body
+
+    const supabase = getSupabase()
+    if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
 
     // Fetch service request
     const { data: requestData, error: fetchError } = await supabase

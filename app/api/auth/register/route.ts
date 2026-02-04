@@ -11,7 +11,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
+    const supabase = createClient(url, key)
 
     const { data: existingUser } = await supabase.from("users").select("id").eq("email", email.toLowerCase()).single()
 

@@ -1,10 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return createClient(url, key)
+}
 
 // GET messages from a conversation
 export async function GET(request: NextRequest) {
@@ -18,6 +20,9 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const supabase = getSupabase()
+    if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
 
     const { data, error } = await supabase
       .from('messages')
@@ -59,6 +64,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const supabase = getSupabase()
+    if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
 
     const { data, error } = await supabase
       .from('messages')
@@ -105,6 +113,9 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const supabase = getSupabase()
+    if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
 
     const { error } = await supabase
       .from('messages')

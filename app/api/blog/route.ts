@@ -3,7 +3,10 @@ import { createClient } from "@supabase/supabase-js"
 
 export async function GET() {
   try {
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!url || !key) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
+    const supabase = createClient(url, key)
 
     const { data: posts, error } = await supabase
       .from("blog_posts")
