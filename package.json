@@ -13,6 +13,7 @@
     "db:seed": "node scripts/seed.js",
     "db:seed:cms": "node scripts/seed-cms.js",
     "migrate-and-seed": "npm run db:apply-sql && npm run db:seed && npm run db:seed:cms",
+    "db:check": "node scripts/db-check.js",
     "supabase:push": "supabase db push --db-url \"$DATABASE_URL\" --include-seed",
     "start": "next start",
     "audit": "npm audit",

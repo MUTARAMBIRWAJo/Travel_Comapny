@@ -33,13 +33,29 @@ jobs:
             exit 1
           fi
 
+      - name: Check DB reachability
+        run: |
+          npm run db:check 2>&1 | tee db-check.log
+
       - name: Apply SQL files
-        run: npm run db:apply-sql
+        run: |
+          npm run db:apply-sql 2>&1 | tee apply-sql.log
 
       - name: Run JS seed scripts
         run: |
-          npm run db:seed
-          npm run db:seed:cms
+          npm run db:seed 2>&1 | tee seed.log
+          npm run db:seed:cms 2>&1 | tee seed-cms.log
+
+      - name: Upload DB logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-logs
+          path: |
+            db-check.log
+            apply-sql.log
+            seed.log
+            seed-cms.log
 
       - name: Optional - Push migrations via Supabase CLI (if you prefer)
         if: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

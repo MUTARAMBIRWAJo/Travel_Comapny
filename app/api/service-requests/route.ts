@@ -149,7 +149,22 @@ export async function POST(request: NextRequest) {
         created_at: new Date().toISOString(),
       }))
 
-      await supabase.from("request_documents").insert(documentRecords)
+      const { data: insertedDocs } = await supabase
+        .from("request_documents")
+        .insert(documentRecords)
+        .select("id,file_path")
+
+      await Promise.all(
+        (insertedDocs || []).map((doc) =>
+          logAuditEvent({
+            entityType: "document",
+            entityId: doc.id,
+            action: "document_uploaded",
+            actorId: data.user_id,
+            metadata: { filePath: doc.file_path },
+          }),
+        ),
+      )
     }
 
     await logAuditEvent({
