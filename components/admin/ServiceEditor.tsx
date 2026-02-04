@@ -3,6 +3,7 @@
 import React from "react"
 
 import { useState } from "react"
+import Image from 'next/image'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { X, Upload } from "lucide-react"
@@ -66,15 +67,15 @@ export function ServiceEditor({ service, onSave, onClose }: ServiceEditorProps) 
             <X className="w-4 h-4" />
           </Button>
         </CardHeader>
-        
+
         <CardContent className="space-y-6 pt-6">
           {/* Image Upload */}
           <div>
             <label className="block text-sm font-medium mb-3">Service Image</label>
             <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/50 transition">
               {imagePreview ? (
-                <div className="relative">
-                  <img src={imagePreview || "/placeholder.svg"} alt="Preview" className="w-full h-40 object-cover rounded-lg" />
+                <div className="relative w-full h-40">
+                  <Image src={imagePreview || "/placeholder.svg"} alt="Preview" fill className="object-cover rounded-lg" />
                   <Button
                     variant="destructive"
                     size="sm"

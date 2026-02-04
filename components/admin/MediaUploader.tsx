@@ -3,6 +3,7 @@
 import React from "react"
 
 import { useState } from "react"
+import Image from 'next/image'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Upload, File, Trash2, ImageIcon, Video } from "lucide-react"
@@ -102,9 +103,8 @@ export function MediaUploader() {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-lg p-12 text-center transition ${
-              isDragging ? "border-primary bg-primary/5" : "border-muted-foreground"
-            }`}
+            className={`border-2 border-dashed rounded-lg p-12 text-center transition ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground"
+              }`}
           >
             <label className="cursor-pointer space-y-3">
               <Upload className="w-12 h-12 mx-auto text-muted-foreground" />
@@ -142,7 +142,7 @@ export function MediaUploader() {
                     {/* Media Preview */}
                     <div className="relative w-full aspect-square bg-muted flex items-center justify-center overflow-hidden">
                       {item.type === "image" ? (
-                        <img src={item.url || "/placeholder.svg"} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                        <Image src={item.url || "/placeholder.svg"} alt={item.name} fill className="object-cover group-hover:scale-110 transition-transform" />
                       ) : item.type === "video" ? (
                         <>
                           <Video className="w-8 h-8 text-muted-foreground" />

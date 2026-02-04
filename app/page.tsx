@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
+import Image from 'next/image'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,11 +39,6 @@ export default async function Home() {
             <source
               src="https://videos.unsplash.com/video-1512941692352-84fc14ce6d37?w=1200&h=600&fit=crop"
               type="video/mp4"
-            />
-            <img
-              src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&h=600&fit=crop"
-              alt="Hero"
-              className="w-full h-full object-cover"
             />
           </video>
         </div>
@@ -162,11 +158,7 @@ export default async function Home() {
                 return (
                   <Card key={pkg.id} className="overflow-hidden card-hover flex flex-col shadow-lg hover:shadow-2xl transition-shadow group">
                     <div className="w-full h-48 bg-muted relative overflow-hidden">
-                      <img
-                        src={pkg.image_url || packageImages[idx % packageImages.length]}
-                        alt={pkg.title_en}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
+                      <Image src={pkg.image_url || packageImages[idx % packageImages.length]} alt={pkg.title_en} fill className="object-cover group-hover:scale-110 transition-transform duration-300" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                     </div>
                     <CardHeader>

@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
+import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -62,13 +63,11 @@ export default function PackagesPage() {
         <section className="relative py-20 md:py-32 overflow-hidden">
           <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 bg-black/40 z-10"></div>
-            <img
-              src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1400&h=600&fit=crop"
-              alt="Travel packages hero"
-              className="w-full h-full object-cover"
-            />
+            <div className="absolute inset-0">
+              <Image src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1400&h=600&fit=crop" alt="Travel packages hero" fill className="object-cover" priority />
+            </div>
           </div>
-          
+
           <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">Travel Packages</h1>
             <p className="text-xl text-gray-100 max-w-2xl mx-auto">
@@ -101,11 +100,7 @@ export default function PackagesPage() {
               {PACKAGES.map((pkg) => (
                 <Card key={pkg.id} className="overflow-hidden card-hover flex flex-col shadow-lg hover:shadow-2xl transition-shadow group">
                   <div className="w-full h-40 bg-muted relative overflow-hidden">
-                    <img
-                      src={pkg.image || "/placeholder.svg"}
-                      alt={pkg.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
+                    <Image src={pkg.image || "/placeholder.svg"} alt={pkg.title} fill className="object-cover group-hover:scale-110 transition-transform duration-300" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                     <Badge variant="secondary" className="absolute top-3 right-3">{pkg.category}</Badge>
                   </div>

@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
+import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
@@ -63,12 +64,8 @@ export default function BlogPage() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {posts.map((post) => (
                 <Card key={post.id} className="overflow-hidden card-hover flex flex-col">
-                  <div className="w-full h-48 bg-muted">
-                    <img
-                      src={post.image || "/placeholder.svg"}
-                      alt={post.title}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-full h-48 bg-muted relative overflow-hidden">
+                    <Image src={post.image || "/placeholder.svg"} alt={post.title} fill className="object-cover" />
                   </div>
                   <CardHeader className="flex-grow">
                     <div className="flex items-start justify-between mb-2 gap-2">
