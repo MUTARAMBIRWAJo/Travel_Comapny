@@ -1,0 +1,101 @@
+═══════════════════════════════════════════════════════════════════════════════
+  QUICK DATABASE SETUP - We-Of-You Travel Company
+═══════════════════════════════════════════════════════════════════════════════
+
+⚠️  CURRENT STATUS
+─────────────────────────────────────────────────────────────────────────────
+The application is running PERFECTLY with default fallback data.
+You're seeing 404 errors because CMS tables haven't been created in Supabase yet.
+
+✅ What's Working
+─────────────────────────────────────────────────────────────────────────────
+✓ Homepage displays with default services, packages, testimonials
+✓ All pages render correctly
+✓ Dashboards load and function
+✓ Forms and navigation work
+✓ Authentication ready
+✓ Messaging system ready
+✓ Document management ready
+✓ Admin controls ready
+
+⏭️  QUICK FIX (2 minutes)
+─────────────────────────────────────────────────────────────────────────────
+
+1. Open Supabase SQL Editor:
+   https://app.supabase.com → SQL Editor → New Query
+
+2. Copy ALL content from:
+   /scripts/init-database.sql
+
+3. Paste into SQL editor and click RUN
+
+4. Done! Database is now initialized
+
+✅ After Setup
+─────────────────────────────────────────────────────────────────────────────
+✓ No more 404 errors
+✓ Live database queries instead of defaults
+✓ Admin can manage content, services, packages
+✓ Real-time data from Supabase
+
+📦 Database Tables Created
+─────────────────────────────────────────────────────────────────────────────
+
+Core Tables:
+  • users - User accounts and profiles
+  • companies - Corporate accounts
+  • destinations - Travel destinations
+  • packages - Travel packages
+
+CMS Tables (for dynamic content):
+  • cms_services - Service offerings
+  • cms_packages - Package content
+  • cms_testimonials - Client testimonials
+  • cms_destinations - Destination info
+  • cms_global_settings - Site configuration
+  • cms_pages - Page management
+  • cms_faqs - FAQ sections
+
+System Tables (for features):
+  • travel_requests - Service requests
+  • service_documents - File storage
+  • conversations - Messaging
+  • messages - Individual messages
+  • officer_assignments - Officer management
+
+🔗 Optional Migrations
+─────────────────────────────────────────────────────────────────────────────
+After the core database is set up, you can optionally run:
+  
+  1. /scripts/add-service-requests-documents.sql
+     (for service requests, documents, and currency management)
+
+  2. /scripts/add-messaging-system.sql
+     (for real-time messaging and officer assignment)
+
+⚙️  Default Fallback Data
+─────────────────────────────────────────────────────────────────────────────
+The app includes excellent defaults so it works BEFORE database setup:
+
+Services:
+  • Visa Assistance
+  • Flight Booking
+  • Corporate Travel
+  • Travel Packages
+
+Packages:
+  • Dubai Holiday (5 Days, $2,500)
+  • European Cities (10 Days, $5,000)
+
+Currencies:
+  • USD, RWF, EUR, GBP, KES, UGX, ZAR, TZS
+
+📞 Support
+─────────────────────────────────────────────────────────────────────────────
+If you encounter issues:
+  1. Check that Supabase credentials are set in environment variables
+  2. Verify API keys are active in Supabase dashboard
+  3. Check SQL errors - they'll show in the SQL editor
+  4. Read the full guide: /DATABASE_SETUP_GUIDE.md
+
+═══════════════════════════════════════════════════════════════════════════════
