@@ -1,0 +1,48 @@
+name: Migrate and Seed Database
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+
+jobs:
+  migrate-and-seed:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check required env vars
+        run: |
+          echo "Checking env..."
+          if [ -z "$DATABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "Required secrets not set: DATABASE_URL, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY"
+            exit 1
+          fi
+
+      - name: Apply SQL files
+        run: npm run db:apply-sql
+
+      - name: Run JS seed scripts
+        run: |
+          npm run db:seed
+          npm run db:seed:cms
+
+      - name: Optional - Push migrations via Supabase CLI (if you prefer)
+        if: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "Using Supabase CLI to push migrations (requires SUPABASE_ACCESS_TOKEN secret)"
+          npm run supabase:push
