@@ -10,6 +10,19 @@ function getSupabase() {
   return createClient(url, key)
 }
 
+function resolveActorId(request: NextRequest, actorId?: string | null) {
+  if (actorId) return actorId
+  const token = request.cookies.get("session_token")?.value
+  if (!token) return null
+  try {
+    const decoded = Buffer.from(token, "base64").toString("utf-8")
+    return decoded.split(":")[0] || null
+  } catch (error) {
+    console.warn("[v0] Failed to parse session token:", error)
+    return null
+  }
+}
+
 const LEGACY_STATUS_MAP: Record<string, string> = {
   pending: "submitted",
   under_review: "submitted",
@@ -99,18 +112,25 @@ export async function POST(request: NextRequest) {
       budget_usd,
       description,
       documents,
+      status,
+      user_id,
     } = body
-    if (!traveller_name || !traveller_email || !destination || !travel_date) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 },
-      )
+    if (normalizeStatus(status || "submitted") !== "draft") {
+      if (!traveller_name || !traveller_email || !destination || !travel_date) {
+        return NextResponse.json(
+          { error: "Missing required fields" },
+          { status: 400 },
+        )
+      }
     }
 
     const supabase = getSupabase()
     if (!supabase) return NextResponse.json({ error: "Supabase not configured" }, { status: 500 })
 
-    const initialStatus = "submitted"
+    const initialStatus = normalizeStatus(status || "submitted")
+    if (!REQUEST_STATUSES.includes(initialStatus as (typeof REQUEST_STATUSES)[number])) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 })
+    }
 
     // Insert service request
     const { data, error } = await supabase
@@ -121,10 +141,12 @@ export async function POST(request: NextRequest) {
         traveller_email,
         traveller_phone,
         traveller_country,
+        destination,
         travel_date,
         budget_usd: budget_usd || 0,
         description,
         status: initialStatus,
+        user_id: user_id || null,
         created_at: new Date().toISOString(),
       })
       .select()
@@ -160,7 +182,7 @@ export async function POST(request: NextRequest) {
             entityType: "document",
             entityId: doc.id,
             action: "document_uploaded",
-            actorId: data.user_id,
+            actorId: data.user_id || null,
             metadata: { filePath: doc.file_path },
           }),
         ),
@@ -173,7 +195,7 @@ export async function POST(request: NextRequest) {
       action: "status_changed",
       fromStatus: null,
       toStatus: initialStatus,
-      actorId: data.user_id,
+      actorId: data.user_id || null,
     })
 
     return NextResponse.json({
@@ -193,7 +215,22 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, status, action, actorId, rejectionReason } = body
+    const {
+      id,
+      status,
+      action,
+      actorId,
+      rejectionReason,
+      service_type,
+      traveller_name,
+      traveller_email,
+      traveller_phone,
+      traveller_country,
+      destination,
+      travel_date,
+      budget_usd,
+      description,
+    } = body
 
     if (!id) {
       return NextResponse.json({ error: "Request ID required" }, { status: 400 })
@@ -204,7 +241,7 @@ export async function PATCH(request: NextRequest) {
 
     const { data: existing, error: fetchError } = await supabase
       .from("service_requests")
-      .select("id,status")
+      .select("id,status,traveller_name,traveller_email,destination,travel_date")
       .eq("id", id)
       .single()
 
@@ -213,7 +250,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     const currentStatus = normalizeStatus(existing.status)
-    let targetStatus = status ? normalizeStatus(status) : ""
+    const resolvedActorId = resolveActorId(request, actorId)
+    let targetStatus = status ? normalizeStatus(status) : currentStatus
     let auditAction: "status_changed" | "approved" | "rejected" = "status_changed"
 
     if (action === "approve") {
@@ -230,11 +268,25 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 })
     }
 
-    if (!canTransition(currentStatus, targetStatus)) {
+    if (status && !canTransition(currentStatus, targetStatus)) {
       return NextResponse.json(
         { error: `Invalid status transition from ${currentStatus} to ${targetStatus}` },
         { status: 400 },
       )
+    }
+
+    if (targetStatus === "submitted") {
+      const mergedName = traveller_name ?? existing.traveller_name
+      const mergedEmail = traveller_email ?? existing.traveller_email
+      const mergedDestination = destination ?? existing.destination
+      const mergedDate = travel_date ?? existing.travel_date
+
+      if (!mergedName || !mergedEmail || !mergedDestination || !mergedDate) {
+        return NextResponse.json(
+          { error: "Missing required fields" },
+          { status: 400 },
+        )
+      }
     }
 
     const updatePayload: Record<string, unknown> = {
@@ -242,8 +294,18 @@ export async function PATCH(request: NextRequest) {
       updated_at: new Date().toISOString(),
     }
 
+    if (service_type) updatePayload.service_type = service_type
+    if (traveller_name) updatePayload.traveller_name = traveller_name
+    if (traveller_email) updatePayload.traveller_email = traveller_email
+    if (traveller_phone !== undefined) updatePayload.traveller_phone = traveller_phone
+    if (traveller_country !== undefined) updatePayload.traveller_country = traveller_country
+    if (destination) updatePayload.destination = destination
+    if (travel_date) updatePayload.travel_date = travel_date
+    if (budget_usd !== undefined) updatePayload.budget_usd = budget_usd
+    if (description !== undefined) updatePayload.description = description
+
     if (auditAction === "approved") {
-      updatePayload.approved_by = actorId || null
+      updatePayload.approved_by = resolvedActorId || null
       updatePayload.approved_at = new Date().toISOString()
       updatePayload.reviewed_at = new Date().toISOString()
     }
@@ -268,7 +330,7 @@ export async function PATCH(request: NextRequest) {
       action: auditAction,
       fromStatus: currentStatus,
       toStatus: targetStatus,
-      actorId,
+      actorId: resolvedActorId,
       metadata: auditAction === "rejected" ? { rejectionReason } : undefined,
     })
 

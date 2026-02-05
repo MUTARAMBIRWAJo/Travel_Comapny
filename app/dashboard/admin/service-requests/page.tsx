@@ -3,16 +3,21 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { CheckCircle, Clock, AlertCircle, FileText, Download } from 'lucide-react'
+import { CheckCircle, Clock, AlertCircle, FileText, Download, MessageSquare } from 'lucide-react'
+import { ConversationChat } from '@/components/ConversationChat'
 
 export default function ServiceRequestsPage() {
   const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [selectedRequest, setSelectedRequest] = useState<any>(null)
+  const [actionLoading, setActionLoading] = useState(false)
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [conversationLoading, setConversationLoading] = useState(false)
+  const [currentUser, setCurrentUser] = useState<{ id: string; role: string } | null>(null)
+  const [unreadByRequest, setUnreadByRequest] = useState<Record<string, number>>({})
 
   const fetchRequests = useCallback(async () => {
     setLoading(true)
@@ -32,18 +37,123 @@ export default function ServiceRequestsPage() {
   }, [fetchRequests])
 
   const statusConfig = {
-    pending: { icon: Clock, color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
+    draft: { icon: Clock, color: 'bg-slate-100 text-slate-800', label: 'Draft' },
+    submitted: { icon: Clock, color: 'bg-yellow-100 text-yellow-800', label: 'Submitted' },
     approved: { icon: CheckCircle, color: 'bg-green-100 text-green-800', label: 'Approved' },
-    rejected: { icon: AlertCircle, color: 'bg-red-100 text-red-800', label: 'Rejected' },
-    in_progress: { icon: Clock, color: 'bg-blue-100 text-blue-800', label: 'In Progress' }
+    fulfilled: { icon: CheckCircle, color: 'bg-blue-100 text-blue-800', label: 'Fulfilled' },
+    completed: { icon: CheckCircle, color: 'bg-emerald-100 text-emerald-800', label: 'Completed' },
+    cancelled: { icon: AlertCircle, color: 'bg-red-100 text-red-800', label: 'Cancelled' },
   }
 
-  const getStatusConfig = (status: string) => statusConfig[status as keyof typeof statusConfig] || statusConfig.pending
+  const getStatusConfig = (status: string) => statusConfig[status as keyof typeof statusConfig] || statusConfig.submitted
 
   const filteredRequests = requests.filter(req => {
     if (filter === 'all') return true
     return req.status === filter
   })
+
+  const loadCurrentUser = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/session')
+      if (!response.ok) return
+      const data = await response.json()
+      if (data?.user?.id) {
+        setCurrentUser({ id: data.user.id, role: data.user.role || 'admin' })
+      }
+    } catch (error) {
+      console.log('[v0] Error loading session:', error)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadCurrentUser()
+  }, [loadCurrentUser])
+
+  const loadUnreadCounts = useCallback(async () => {
+    if (!currentUser?.id) return
+    try {
+      const response = await fetch(`/api/conversations?userId=${currentUser.id}&includeUnread=1`)
+      const data = await response.json()
+      if (!response.ok) return
+
+      const counts: Record<string, number> = {}
+        ; (data.conversations || []).forEach((conversation: any) => {
+          if (conversation.service_request_id) {
+            counts[conversation.service_request_id] = conversation.unread_count || 0
+          }
+        })
+      setUnreadByRequest(counts)
+    } catch (error) {
+      console.log('[v0] Error loading unread counts:', error)
+    }
+  }, [currentUser?.id])
+
+  useEffect(() => {
+    loadUnreadCounts()
+  }, [loadUnreadCounts])
+
+  const updateRequestStatus = async (requestId: string, action: 'approve' | 'reject' | 'fulfill', nextStatus?: string) => {
+    setActionLoading(true)
+    try {
+      const rejectionReason = action === 'reject' ? window.prompt('Rejection reason (optional):') : undefined
+      const response = await fetch('/api/service-requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: requestId,
+          action: action === 'fulfill' ? undefined : action,
+          status: action === 'fulfill' ? nextStatus : undefined,
+          rejectionReason: rejectionReason || undefined,
+          actorId: currentUser?.id || null,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        alert(data?.error || 'Failed to update request')
+        return
+      }
+
+      await fetchRequests()
+    } catch (error) {
+      console.log('[v0] Error updating request:', error)
+      alert('Failed to update request')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const ensureConversation = useCallback(async (requestId: string, travelerId?: string | null) => {
+    if (!currentUser?.id) return
+    setConversationLoading(true)
+    try {
+      const existingResp = await fetch(`/api/conversations?serviceRequestId=${requestId}`)
+      const existingData = await existingResp.json()
+      if (existingResp.ok && existingData?.conversation?.id) {
+        setConversationId(existingData.conversation.id)
+        return
+      }
+
+      const createResp = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          travelerId,
+          adminId: currentUser.id,
+          serviceRequestId: requestId,
+          title: `Service Request #${requestId.slice(0, 8)}`,
+        }),
+      })
+      const created = await createResp.json()
+      if (createResp.ok && created?.conversation?.id) {
+        setConversationId(created.conversation.id)
+      }
+    } catch (error) {
+      console.log('[v0] Error loading conversation:', error)
+    } finally {
+      setConversationLoading(false)
+    }
+  }, [currentUser?.id])
 
   return (
     <div className="space-y-8">
@@ -54,12 +164,14 @@ export default function ServiceRequestsPage() {
 
       {/* Filter Tabs */}
       <Tabs defaultValue="all" onValueChange={setFilter}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="all">All ({requests.length})</TabsTrigger>
-          <TabsTrigger value="pending">Pending ({requests.filter(r => r.status === 'pending').length})</TabsTrigger>
+          <TabsTrigger value="draft">Draft ({requests.filter(r => r.status === 'draft').length})</TabsTrigger>
+          <TabsTrigger value="submitted">Submitted ({requests.filter(r => r.status === 'submitted').length})</TabsTrigger>
           <TabsTrigger value="approved">Approved ({requests.filter(r => r.status === 'approved').length})</TabsTrigger>
-          <TabsTrigger value="in_progress">Processing ({requests.filter(r => r.status === 'in_progress').length})</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected ({requests.filter(r => r.status === 'rejected').length})</TabsTrigger>
+          <TabsTrigger value="fulfilled">Fulfilled ({requests.filter(r => r.status === 'fulfilled').length})</TabsTrigger>
+          <TabsTrigger value="completed">Completed ({requests.filter(r => r.status === 'completed').length})</TabsTrigger>
+          <TabsTrigger value="cancelled">Cancelled ({requests.filter(r => r.status === 'cancelled').length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={filter} className="space-y-4">
@@ -125,12 +237,24 @@ export default function ServiceRequestsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setSelectedRequest(request)}
+                            onClick={() => {
+                              setSelectedRequest(request)
+                              setConversationId(null)
+                              if (request.id) {
+                                ensureConversation(request.id, request.user_id)
+                              }
+                            }}
                             className="w-full sm:w-auto"
                           >
                             <FileText className="w-4 h-4 mr-2" />
                             View Details
                           </Button>
+
+                          {unreadByRequest[request.id] > 0 && (
+                            <Badge className="bg-blue-100 text-blue-800 w-fit">
+                              {unreadByRequest[request.id]} unread
+                            </Badge>
+                          )}
 
                           {request.documents && request.documents.length > 0 && (
                             <Button
@@ -226,7 +350,7 @@ export default function ServiceRequestsPage() {
                       <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded">
                         <div className="flex items-center gap-2">
                           <FileText className="w-4 h-4" />
-                          <span className="text-sm">{doc.filename}</span>
+                          <span className="text-sm">{doc.file_name || doc.filename}</span>
                         </div>
                         <Button variant="ghost" size="sm">
                           <Download className="w-4 h-4" />
@@ -238,10 +362,53 @@ export default function ServiceRequestsPage() {
               )}
 
               {/* Actions */}
-              <div className="border-t pt-4 flex gap-2">
-                <Button className="btn-primary">Approve Request</Button>
-                <Button variant="outline">Send to Processing</Button>
-                <Button variant="destructive">Reject</Button>
+              <div className="border-t pt-4 flex flex-wrap gap-2">
+                <Button
+                  className="btn-primary"
+                  onClick={() => updateRequestStatus(selectedRequest.id, 'approve')}
+                  disabled={actionLoading || selectedRequest.status !== 'submitted'}
+                >
+                  Approve Request
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => updateRequestStatus(selectedRequest.id, 'fulfill', 'fulfilled')}
+                  disabled={actionLoading || selectedRequest.status !== 'approved'}
+                >
+                  Mark Fulfilled
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => updateRequestStatus(selectedRequest.id, 'fulfill', 'completed')}
+                  disabled={actionLoading || selectedRequest.status !== 'fulfilled'}
+                >
+                  Mark Completed
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => updateRequestStatus(selectedRequest.id, 'reject')}
+                  disabled={actionLoading || selectedRequest.status === 'cancelled'}
+                >
+                  Cancel
+                </Button>
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                  <h3 className="font-semibold">Messages</h3>
+                </div>
+                {conversationLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading conversation...</p>
+                ) : conversationId && currentUser ? (
+                  <ConversationChat
+                    conversationId={conversationId}
+                    userId={currentUser.id}
+                    userRole={currentUser.role}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No conversation available.</p>
+                )}
               </div>
             </CardContent>
           </Card>

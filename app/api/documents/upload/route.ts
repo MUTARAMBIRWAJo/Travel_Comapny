@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import crypto from 'crypto'
+import crypto from "crypto"
+import { logAuditEvent } from "@/lib/audit"
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -71,18 +72,48 @@ export async function POST(request: NextRequest) {
       .from('service-documents')
       .getPublicUrl(filepath)
 
-    return NextResponse.json({
-      success: true,
-      filePath: filepath,
-      publicUrl: data?.publicUrl,
-      filename: file.name,
-      size: file.size
-    }, { status: 201 })
-  } catch (error) {
-    console.log('[v0] Error in POST /api/documents/upload:', error)
+    if (serviceRequestId) {
+      const { data: doc } = await supabase
+        .from("request_documents")
+        .insert({
+          service_request_id: serviceRequestId,
+          document_type: "supporting",
+          file_name: file.name,
+          file_path: filepath,
+          file_size_bytes: file.size,
+          mime_type: 'application/pdf',
+          status: 'pending',
+          uploaded_at: new Date().toISOString(),
+        })
+        .select("id,file_path")
+        .single()
+
+      if (doc) {
+        await logAuditEvent({
+          entityType: "document",
+          entityId: doc.id,
+          action: "document_uploaded",
+          actorId: null,
+          metadata: { filePath: doc.file_path },
+        })
+      }
+    }
+
     return NextResponse.json(
-      { error: 'Failed to upload document' },
-      { status: 500 }
+      {
+        success: true,
+        filePath: filepath,
+        publicUrl: data?.publicUrl,
+        filename: file.name,
+        size: file.size,
+      },
+      { status: 201 },
+    )
+  } catch (error) {
+    console.log("[v0] Error in POST /api/documents/upload:", error)
+    return NextResponse.json(
+      { error: "Failed to upload document" },
+      { status: 500 },
     )
   }
 }

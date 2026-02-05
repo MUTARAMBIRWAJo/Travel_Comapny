@@ -65,7 +65,14 @@ export default function BlogPage() {
               {posts.map((post) => (
                 <Card key={post.id} className="overflow-hidden card-hover flex flex-col">
                   <div className="w-full h-48 bg-muted relative overflow-hidden">
-                    <Image src={post.image || "/placeholder.svg"} alt={post.title} fill className="object-cover" />
+                    <Image
+                      src={post.image || "/placeholder.svg"}
+                      alt={post.title}
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                      priority={post.id === 1}
+                      className="object-cover"
+                    />
                   </div>
                   <CardHeader className="flex-grow">
                     <div className="flex items-start justify-between mb-2 gap-2">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,27 @@ export default function DocumentManagementPage() {
   const [loading, setLoading] = useState(false)
   const [documents, setDocuments] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState('submitted')
+
+  const fetchDocuments = useCallback(async () => {
+    try {
+      if (activeTab !== 'submitted') {
+        return
+      }
+
+      const statusParam = 'pending'
+      const response = await fetch(`/api/documents/list${statusParam ? `?status=${statusParam}` : ''}`)
+      const data = await response.json()
+      if (response.ok) {
+        setDocuments(data.documents || [])
+      }
+    } catch (error) {
+      console.log('[v0] Error loading documents:', error)
+    }
+  }, [activeTab])
+
+  useEffect(() => {
+    fetchDocuments()
+  }, [fetchDocuments])
 
   const handleGenerateReport = async () => {
     if (!selectedRequestId || !processingStatus) {
@@ -73,6 +94,29 @@ export default function DocumentManagementPage() {
     }
   }
 
+  const handleUpdateStatus = async (docId: string, status: string) => {
+    const rejectionReason = status === 'rejected' ? window.prompt('Rejection reason (optional):') : undefined
+    setLoading(true)
+    try {
+      const response = await fetch('/api/documents/status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: docId, status, rejectionReason })
+      })
+      if (response.ok) {
+        fetchDocuments()
+      } else {
+        const data = await response.json()
+        alert(data?.error || 'Failed to update document')
+      }
+    } catch (error) {
+      console.log('[v0] Error updating document:', error)
+      alert('Failed to update document')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -98,20 +142,49 @@ export default function DocumentManagementPage() {
               <div className="space-y-4">
                 {/* Document List */}
                 <div className="border rounded-lg divide-y max-h-96 overflow-y-auto">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="flex items-center justify-between p-4 hover:bg-muted/50 transition">
-                      <div className="flex items-center gap-3 flex-1">
-                        <FileText className="w-5 h-5 text-blue-600" />
-                        <div>
-                          <p className="font-medium">passport_copy_req_001.pdf</p>
-                          <p className="text-xs text-muted-foreground">Request ID: req_001 • Traveller: John Doe</p>
+                  {documents.length === 0 ? (
+                    <div className="p-4 text-sm text-muted-foreground">No documents found.</div>
+                  ) : (
+                    documents.map((doc) => (
+                      <div key={doc.id} className="flex flex-col gap-2 p-4 hover:bg-muted/50 transition">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1">
+                            <FileText className="w-5 h-5 text-blue-600" />
+                            <div>
+                              <p className="font-medium">{doc.file_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Request ID: {doc.service_request_id} • Traveller: {doc.service_request?.traveller_name || 'Unknown'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleDownloadDocument(doc.file_path)}>
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          <span>Status: {doc.status}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={loading}
+                            onClick={() => handleUpdateStatus(doc.id, 'verified')}
+                          >
+                            Verify
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={loading}
+                            onClick={() => handleUpdateStatus(doc.id, 'rejected')}
+                          >
+                            Reject
+                          </Button>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm">
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -201,27 +274,7 @@ export default function DocumentManagementPage() {
             <CardContent>
               <div className="space-y-4">
                 <div className="border rounded-lg divide-y max-h-96 overflow-y-auto">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center justify-between p-4 hover:bg-muted/50 transition">
-                      <div className="flex items-center gap-3 flex-1">
-                        <FileCheckmark className="w-5 h-5 text-green-600" />
-                        <div>
-                          <p className="font-medium">Processing_Report_req_00{i}.pdf</p>
-                          <p className="text-xs text-muted-foreground">
-                            Sent to: traveller{i}@example.com • {new Date(Date.now() - i * 86400000).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" className="text-red-600 bg-transparent">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                  <div className="p-4 text-sm text-muted-foreground">Reports list will be wired in Phase 3.</div>
                 </div>
               </div>
             </CardContent>

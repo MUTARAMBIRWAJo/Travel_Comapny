@@ -26,21 +26,23 @@ export default async function Home() {
 
       {/* Hero Section with Background Video */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background Video/Image */}
+        {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-black/40 z-10"></div>
-          <video
-            autoPlay
-            muted
-            loop
-            className="w-full h-full object-cover"
-            poster="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&h=600&fit=crop"
-          >
-            <source
-              src="https://videos.unsplash.com/video-1512941692352-84fc14ce6d37?w=1200&h=600&fit=crop"
-              type="video/mp4"
-            />
-          </video>
+          {/*
+            NOTE:
+            We intentionally avoid using a remote background video here.
+            Some networks/DNS setups fail to resolve `videos.unsplash.com`, which causes noisy console errors
+            (net::ERR_NAME_NOT_RESOLVED). A local, optimized image keeps the hero reliable.
+          */}
+          <Image
+            src="/paris-cityscape.png"
+            alt="Travel hero background"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
         </div>
 
         {/* Hero Content */}
@@ -99,7 +101,14 @@ export default async function Home() {
                   <Card key={service.id} className="card-hover flex flex-col overflow-hidden group">
                     <div className="relative h-40 bg-gradient-to-br from-primary/20 to-secondary/20 overflow-hidden">
                       <div className="absolute inset-0">
-                        <Image src={backgroundImages[idx % backgroundImages.length] || "/placeholder.svg"} alt={service.title_en} fill className="object-cover group-hover:scale-110 transition-transform duration-300" />
+                        <Image
+                          src={backgroundImages[idx % backgroundImages.length] || "/placeholder.svg"}
+                          alt={service.title_en}
+                          fill
+                          sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
+                          priority={idx < 2}
+                          className="object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
                       </div>
                       <div className="absolute inset-0 bg-black/20"></div>
                     </div>
@@ -156,7 +165,14 @@ export default async function Home() {
                 return (
                   <Card key={pkg.id} className="overflow-hidden card-hover flex flex-col shadow-lg hover:shadow-2xl transition-shadow group">
                     <div className="w-full h-48 bg-muted relative overflow-hidden">
-                      <Image src={pkg.image_url || packageImages[idx % packageImages.length]} alt={pkg.title_en} fill className="object-cover group-hover:scale-110 transition-transform duration-300" />
+                      <Image
+                        src={pkg.image_url || packageImages[idx % packageImages.length]}
+                        alt={pkg.title_en}
+                        fill
+                        sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                        priority={idx === 0}
+                        className="object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                     </div>
                     <CardHeader>

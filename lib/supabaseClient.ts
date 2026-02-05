@@ -142,23 +142,36 @@ export async function getServices() {
       return DEFAULT_SERVICES;
     }
 
-    const { data, error } = await supabase
-      .from('cms_services')
-      .select('*')
-      .eq('status', 'active')
-      .order('order_index', { ascending: true });
+    // Try cms_services first, fall back to services or defaults
+    try {
+      const { data: cmsData, error: cmsError } = await supabase
+        .from('cms_services')
+        .select('*')
+        .eq('status', 'active')
+        .order('order_index', { ascending: true });
 
-    if (error) {
-      // Silently handle errors (missing tables or columns)
-      if (error?.code === 'PGRST205' || error?.message?.includes('Could not find the table') || error?.message?.includes('does not exist')) {
-        console.log('[v0] Services data not available, using fallback defaults');
-      } else if (error) {
-        console.warn('[v0] Error fetching services:', error);
+      if (!cmsError && cmsData && cmsData.length > 0) {
+        return cmsData;
       }
-      return DEFAULT_SERVICES;
+    } catch (e) {
+      // ignore and fall through
     }
 
-    return data && data.length > 0 ? data : DEFAULT_SERVICES;
+    try {
+      const { data: servicesData, error: servicesError } = await supabase
+        .from('services')
+        .select('*')
+        .eq('status', 'active')
+        .order('order_index', { ascending: true });
+
+      if (!servicesError && servicesData && servicesData.length > 0) {
+        return servicesData;
+      }
+    } catch (e) {
+      // ignore and fall through
+    }
+
+    return DEFAULT_SERVICES;
   } catch (err) {
     // Silently handle fetch errors
     console.log('[v0] Using default services (database not initialized)');

@@ -29,7 +29,11 @@ interface PackageEditorProps {
 
 export function PackageEditor({ package: pkg, onSave, onClose }: PackageEditorProps) {
   const [formData, setFormData] = useState<Package>(
-    pkg || {
+    pkg ? {
+      ...pkg,
+      price_usd: pkg.price_usd || 0,
+      price_rwf: pkg.price_rwf || 0,
+    } : {
       id: crypto.randomUUID(),
       title_en: "",
       duration: "",
@@ -124,7 +128,10 @@ export function PackageEditor({ package: pkg, onSave, onClose }: PackageEditorPr
               <input
                 type="number"
                 value={formData.price_usd}
-                onChange={(e) => setFormData({ ...formData, price_usd: parseFloat(e.target.value) })}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value)
+                  setFormData({ ...formData, price_usd: isNaN(val) ? 0 : val })
+                }}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="0.00"
               />
@@ -134,7 +141,10 @@ export function PackageEditor({ package: pkg, onSave, onClose }: PackageEditorPr
               <input
                 type="number"
                 value={formData.price_rwf}
-                onChange={(e) => setFormData({ ...formData, price_rwf: parseFloat(e.target.value) })}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value)
+                  setFormData({ ...formData, price_rwf: isNaN(val) ? 0 : val })
+                }}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="0.00"
               />

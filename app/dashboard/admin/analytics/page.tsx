@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   BarChart,
@@ -14,22 +15,46 @@ import {
   ResponsiveContainer,
 } from "recharts"
 
-export default function AdminAnalyticsPage() {
-  const monthlyData = [
-    { month: "Jan", users: 120, bookings: 40, revenue: 2400 },
-    { month: "Feb", users: 250, bookings: 60, revenue: 3600 },
-    { month: "Mar", users: 380, bookings: 85, revenue: 5100 },
-    { month: "Apr", users: 520, bookings: 120, revenue: 7200 },
-    { month: "May", users: 680, bookings: 156, revenue: 9300 },
-    { month: "Jun", users: 850, bookings: 195, revenue: 11700 },
-  ]
+type Stat = { label: string; value: number; change: string }
+type MonthlyRow = { month: string; users: number; bookings: number; revenue: number }
 
-  const stats = [
-    { label: "Total Revenue", value: "$39,300", change: "+18.5%" },
-    { label: "New Users", value: "730", change: "+12.3%" },
-    { label: "Conversion Rate", value: "23.2%", change: "+2.1%" },
-    { label: "Avg Trip Value", value: "$2,850", change: "+8.7%" },
-  ]
+export default function AdminAnalyticsPage() {
+  const [monthlyData, setMonthlyData] = useState<MonthlyRow[]>([])
+  const [stats, setStats] = useState<Stat[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      setLoading(true)
+      try {
+        const response = await fetch("/api/analytics")
+        const data = await response.json()
+        if (response.ok) {
+          setMonthlyData(data.monthlyData || [])
+          setStats(data.stats || [])
+        }
+      } catch (error) {
+        console.log("[v0] Error loading analytics:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadAnalytics()
+  }, [])
+
+  const formatCurrency = (value: number) => `$${value.toLocaleString()}`
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-3xl font-bold text-foreground">Analytics</h2>
+          <p className="text-muted-foreground">Loading analytics...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -46,8 +71,16 @@ export default function AdminAnalyticsPage() {
               <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-green-600 mt-1">{stat.change}</p>
+              <div className="text-2xl font-bold">
+                {stat.label.toLowerCase().includes("revenue") || stat.label.toLowerCase().includes("value")
+                  ? formatCurrency(stat.value)
+                  : stat.value.toLocaleString()}
+              </div>
+              {stat.change ? (
+                <p className="text-xs text-green-600 mt-1">{stat.change}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">Updated live</p>
+              )}
             </CardContent>
           </Card>
         ))}

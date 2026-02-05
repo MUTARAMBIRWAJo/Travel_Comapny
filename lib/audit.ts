@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 export type AuditAction = "status_changed" | "approved" | "rejected" | "document_uploaded"
 
 export interface AuditLogInput {
-      entityType: "travel_request" | "service_request" | "document"
+      entityType: string
       entityId: string
       action: AuditAction
       actorId?: string | null

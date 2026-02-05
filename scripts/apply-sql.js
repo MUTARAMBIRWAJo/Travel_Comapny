@@ -4,15 +4,34 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.local.env') })
 const { Client } = require('pg')
 
 const sqlDir = path.resolve(__dirname)
-const files = [
+
+// Collect migration files from supabase/migrations and the scripts SQL files, then run supabase/seed.sql last
+const migrationDir = path.resolve(__dirname, '..', 'supabase', 'migrations')
+let files = []
+
+if (fs.existsSync(migrationDir)) {
+      files = files.concat(
+            fs.readdirSync(migrationDir)
+                  .filter((f) => f.endsWith('.sql'))
+                  .sort()
+                  .map((f) => path.join(migrationDir, f))
+      )
+}
+
+files = files.concat([
       '001-init-database.sql',
+      'add-audit-logs.sql',
+      'add-approval-columns.sql',
       'add-messaging-system.sql',
       'setup-packages-table.sql',
       'add-service-requests-documents.sql',
       'fix-packages-columns.sql',
       'fix-schema-packages.sql',
       '002-seed-sample-data.sql'
-].map((f) => path.join(sqlDir, f))
+].map((f) => path.join(sqlDir, f)))
+
+const supabaseSeed = path.resolve(__dirname, '..', 'supabase', 'seed.sql')
+if (fs.existsSync(supabaseSeed)) files.push(supabaseSeed)
 
 async function run() {
       const databaseUrl = process.env.DATABASE_URL

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Users, FileText, Settings, LogOut, Plane, BarChart3, MessageSquare, Leaf } from "lucide-react"
+import { LayoutDashboard, Users, FileText, Settings, LogOut, Plane, BarChart3, MessageSquare, Leaf, Shield, Building } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -10,6 +10,8 @@ const dashboardNavs = {
   admin: [
     { label: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
     { label: "User Management", href: "/dashboard/admin/users", icon: Users },
+    { label: "Role Management", href: "/dashboard/admin/roles", icon: Shield },
+    { label: "Organizations", href: "/dashboard/admin/organizations", icon: Building },
     { label: "Content", href: "/dashboard/admin/content", icon: FileText },
     { label: "Analytics", href: "/dashboard/admin/analytics", icon: BarChart3 },
     { label: "Settings", href: "/dashboard/admin/settings", icon: Settings },

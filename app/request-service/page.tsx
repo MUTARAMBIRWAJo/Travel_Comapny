@@ -16,6 +16,8 @@ export default function RequestServicePage() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [uploadedDocs, setUploadedDocs] = useState<string[]>([])
+  const [serviceRequestId, setServiceRequestId] = useState<string | null>(null)
+  const [draftSaving, setDraftSaving] = useState(false)
   const [formData, setFormData] = useState({
     service_type: 'visa',
     traveller_name: '',
@@ -50,12 +52,19 @@ export default function RequestServicePage() {
       return
     }
 
+    if (!serviceRequestId) {
+      alert('Please save your request before submitting')
+      return
+    }
+
     setLoading(true)
     try {
       const response = await fetch('/api/service-requests', {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: serviceRequestId,
+          status: 'submitted',
           ...formData,
           documents: uploadedDocs,
           budget_usd: parseFloat(formData.budget_usd) || 0
@@ -64,7 +73,7 @@ export default function RequestServicePage() {
 
       if (response.ok) {
         const data = await response.json()
-        alert('Service request submitted successfully! Your request ID is: ' + data.id)
+        alert('Service request submitted successfully! Your request ID is: ' + (data.request?.id || serviceRequestId))
         setStep(3)
       } else {
         alert('Error submitting request')
@@ -74,6 +83,39 @@ export default function RequestServicePage() {
       alert('Error submitting request')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleCreateDraft = async () => {
+    if (serviceRequestId) {
+      setStep(2)
+      return
+    }
+
+    setDraftSaving(true)
+    try {
+      const response = await fetch('/api/service-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          status: 'draft',
+          budget_usd: parseFloat(formData.budget_usd) || 0
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setServiceRequestId(data.id)
+        setStep(2)
+      } else {
+        alert('Error saving draft')
+      }
+    } catch (error) {
+      console.log('[v0] Error saving draft:', error)
+      alert('Error saving draft')
+    } finally {
+      setDraftSaving(false)
     }
   }
 
@@ -95,9 +137,8 @@ export default function RequestServicePage() {
             <div className="flex gap-2 mb-4">
               {[1, 2, 3].map((s) => (
                 <div key={s} className="flex-1">
-                  <div className={`h-2 rounded-full transition-colors ${
-                    s <= step ? 'bg-primary' : 'bg-muted'
-                  }`}></div>
+                  <div className={`h-2 rounded-full transition-colors ${s <= step ? 'bg-primary' : 'bg-muted'
+                    }`}></div>
                   <p className="text-xs text-center mt-2 text-muted-foreground">
                     {s === 1 ? 'Your Info' : s === 2 ? 'Documents' : 'Confirmation'}
                   </p>
@@ -236,9 +277,10 @@ export default function RequestServicePage() {
                 <div className="flex gap-2">
                   <Button
                     className="btn-primary ml-auto"
-                    onClick={() => setStep(2)}
+                    onClick={handleCreateDraft}
+                    disabled={draftSaving}
                   >
-                    Next: Upload Documents
+                    {draftSaving ? 'Saving Draft...' : 'Next: Upload Documents'}
                   </Button>
                 </div>
               </CardContent>
@@ -253,9 +295,9 @@ export default function RequestServicePage() {
                 <CardDescription>Upload required PDF documents (passport, visa pages, etc.)</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <DocumentUploader 
+                <DocumentUploader
                   onUploadSuccess={handleDocumentUpload}
-                  serviceRequestId="temp"
+                  serviceRequestId={serviceRequestId || undefined}
                 />
 
                 {uploadedDocs.length > 0 && (

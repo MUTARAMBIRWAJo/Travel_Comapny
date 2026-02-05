@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 
 interface DocumentUploaderProps {
   onUploadSuccess: (docPath: string) => void
-  serviceRequestId: string
+  serviceRequestId?: string
 }
 
 export function DocumentUploader({ onUploadSuccess, serviceRequestId }: DocumentUploaderProps) {
@@ -28,6 +28,10 @@ export function DocumentUploader({ onUploadSuccess, serviceRequestId }: Document
   }
 
   const processFile = async (file: File) => {
+    if (!serviceRequestId) {
+      setMessage({ type: 'error', text: 'Please save your request before uploading documents' })
+      return
+    }
     if (!file.name.endsWith('.pdf')) {
       setMessage({ type: 'error', text: 'Only PDF files are allowed' })
       return
@@ -92,11 +96,10 @@ export function DocumentUploader({ onUploadSuccess, serviceRequestId }: Document
   return (
     <div className="space-y-4">
       <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-          isDragging
+        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging
             ? 'border-primary bg-primary/5'
             : 'border-muted-foreground/25 hover:border-primary/50'
-        }`}
+          }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -148,11 +151,10 @@ export function DocumentUploader({ onUploadSuccess, serviceRequestId }: Document
       )}
 
       {message && (
-        <div className={`flex items-center gap-2 p-3 rounded-lg ${
-          message.type === 'success'
+        <div className={`flex items-center gap-2 p-3 rounded-lg ${message.type === 'success'
             ? 'bg-green-50 text-green-700'
             : 'bg-red-50 text-red-700'
-        }`}>
+          }`}>
           {message.type === 'success' ? (
             <CheckCircle className="w-5 h-5" />
           ) : (

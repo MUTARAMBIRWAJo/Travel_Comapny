@@ -26,6 +26,19 @@ function getSupabase(anon = true) {
   return createClient(url, key)
 }
 
+function resolveActorId(request: NextRequest, actorId?: string | null) {
+  if (actorId) return actorId
+  const token = request.cookies.get("session_token")?.value
+  if (!token) return null
+  try {
+    const decoded = Buffer.from(token, "base64").toString("utf-8")
+    return decoded.split(":")[0] || null
+  } catch (error) {
+    console.warn("[v0] Failed to parse session token:", error)
+    return null
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabase()
@@ -53,10 +66,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId, destination, departureDate, returnDate, type, budget, status } = body
+    const { userId, destination, departureDate, returnDate, type, budget, status, companyId, travelersCount } = body
 
-    if (!userId || !destination) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    if (normalizeStatus(status || "submitted") !== "draft") {
+      if (!userId || !destination || !departureDate || !returnDate) {
+        return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      }
     }
 
     const supabase = getSupabase(false)
@@ -71,10 +86,12 @@ export async function POST(request: NextRequest) {
       .from("travel_requests")
       .insert({
         user_id: userId,
+        company_id: companyId || null,
         destination,
         start_date: departureDate || null,
         end_date: returnDate || null,
-        purpose: type || "leisure",
+        type: type || "leisure",
+        travelers_count: travelersCount || 1,
         budget_usd: budget ? Number.parseFloat(budget) : null,
         status: initialStatus,
       })
@@ -122,6 +139,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const currentStatus = normalizeStatus(existing.status)
+    const resolvedActorId = resolveActorId(request, actorId)
     let targetStatus = status ? normalizeStatus(status) : ""
     let auditAction: "status_changed" | "approved" | "rejected" = "status_changed"
 
@@ -152,7 +170,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (auditAction === "approved") {
-      updatePayload.approved_by = actorId || null
+      updatePayload.approved_by = resolvedActorId || null
       updatePayload.approved_at = new Date().toISOString()
     }
 
@@ -175,7 +193,7 @@ export async function PATCH(request: NextRequest) {
       action: auditAction,
       fromStatus: currentStatus,
       toStatus: targetStatus,
-      actorId,
+      actorId: resolvedActorId,
       metadata: auditAction === "rejected" ? { rejectionReason } : undefined,
     })
 

@@ -12,10 +12,12 @@ function getSupabase() {
 export async function GET(request: NextRequest) {
   try {
     const userId = request.nextUrl.searchParams.get('userId')
+    const serviceRequestId = request.nextUrl.searchParams.get('serviceRequestId')
+    const includeUnread = request.nextUrl.searchParams.get('includeUnread') === '1'
 
-    if (!userId) {
+    if (!userId && !serviceRequestId) {
       return NextResponse.json(
-        { error: 'User ID is required' },
+        { error: 'User ID or Service Request ID is required' },
         { status: 400 }
       )
     }
@@ -23,7 +25,7 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabase()
     if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('conversations')
       .select(`
         *,
@@ -31,8 +33,17 @@ export async function GET(request: NextRequest) {
         admin:users!conversations_admin_id_fkey(id, full_name, email),
         officer:users!conversations_officer_id_fkey(id, full_name, email)
       `)
-      .or(`traveler_id.eq.${userId},admin_id.eq.${userId},officer_id.eq.${userId}`)
       .order('last_message_at', { ascending: false, nullsFirst: false })
+
+    if (serviceRequestId) {
+      query = query.eq('service_request_id', serviceRequestId)
+    }
+
+    if (userId) {
+      query = query.or(`traveler_id.eq.${userId},admin_id.eq.${userId},officer_id.eq.${userId}`)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       console.error('[v0] Error fetching conversations:', error)
@@ -40,6 +51,30 @@ export async function GET(request: NextRequest) {
         { error: error.message },
         { status: 500 }
       )
+    }
+
+    if (serviceRequestId) {
+      return NextResponse.json({ conversation: data?.[0] || null })
+    }
+
+    if (includeUnread && userId) {
+      const conversationsWithUnread = await Promise.all(
+        (data || []).map(async (conversation) => {
+          const { count } = await supabase
+            .from('messages')
+            .select('id', { count: 'exact', head: true })
+            .eq('conversation_id', conversation.id)
+            .eq('is_read', false)
+            .neq('sender_id', userId)
+
+          return {
+            ...conversation,
+            unread_count: count || 0,
+          }
+        })
+      )
+
+      return NextResponse.json({ conversations: conversationsWithUnread })
     }
 
     return NextResponse.json({ conversations: data })

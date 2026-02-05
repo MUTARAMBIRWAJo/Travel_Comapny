@@ -1,5 +1,6 @@
 "use client"
 
+import Link from 'next/link'
 import { Bell, Globe, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -45,9 +46,9 @@ export function DashboardHeader() {
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem>
-              <a href="/api/auth/logout" className="w-full">
+              <Link href="/api/auth/logout" className="w-full">
                 Logout
-              </a>
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

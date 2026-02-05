@@ -64,7 +64,14 @@ export default function PackagesPage() {
           <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 bg-black/40 z-10"></div>
             <div className="absolute inset-0">
-              <Image src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1400&h=600&fit=crop" alt="Travel packages hero" fill className="object-cover" priority />
+              <Image
+                src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1400&h=600&fit=crop"
+                alt="Travel packages hero"
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover"
+              />
             </div>
           </div>
 
@@ -100,7 +107,13 @@ export default function PackagesPage() {
               {PACKAGES.map((pkg) => (
                 <Card key={pkg.id} className="overflow-hidden card-hover flex flex-col shadow-lg hover:shadow-2xl transition-shadow group">
                   <div className="w-full h-40 bg-muted relative overflow-hidden">
-                    <Image src={pkg.image || "/placeholder.svg"} alt={pkg.title} fill className="object-cover group-hover:scale-110 transition-transform duration-300" />
+                    <Image
+                      src={pkg.image || "/placeholder.svg"}
+                      alt={pkg.title}
+                      fill
+                      sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
+                      className="object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                     <Badge variant="secondary" className="absolute top-3 right-3">{pkg.category}</Badge>
                   </div>
