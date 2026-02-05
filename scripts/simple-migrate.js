@@ -30,6 +30,7 @@ async function runMigrations() {
                   '001-init-database.sql',
                   'add-audit-logs.sql',
                   'add-approval-columns.sql',
+                  'add-payments.sql',
                   'add-messaging-system.sql',
                   'setup-packages-table.sql',
                   'add-service-requests-documents.sql',

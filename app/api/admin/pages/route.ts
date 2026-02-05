@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { requireAdmin } from '../../../../lib/admin-auth'
+import { requireAdmin, getCurrentUserFromCookie } from '../../../../lib/admin-auth'
 import { logAuditEvent } from '../../../../lib/audit'
 
 export async function GET(request: Request) {
@@ -20,23 +20,74 @@ export async function POST(request: Request) {
       const authErr = await requireAdmin()
       if (authErr) return authErr
       const body = await request.json()
-      const { title, slug, status = 'draft', seo_title = null, seo_description = null, sections = [] } = body
+      const { title, slug, status = 'draft', seo_title = null, seo_description = null, sections = [], content = null } = body
       if (!title || !slug) return NextResponse.json({ error: 'Missing title or slug' }, { status: 400 })
 
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL
       const key = process.env.SUPABASE_SERVICE_ROLE_KEY
       const supabase = createClient(url!, key!)
 
-      const { data, error } = await supabase.from('cms_pages').insert({ title, slug, page_key: slug, status, seo_title, seo_description }).select().maybeSingle()
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      // Ensure base page exists or update it
+      const { data: pageBase, error: pageError } = await supabase
+            .from('cms_pages')
+            .upsert({ title, slug, page_key: slug, status, seo_title, seo_description })
+            .select()
+            .maybeSingle()
 
-      // Insert sections
-      if (sections && sections.length > 0) {
-            const insertSections = sections.map((s: any, i: number) => ({ page_id: data.id, type: s.type, content_json: s.content_json || s.content || {}, order_index: i }))
+      if (pageError) return NextResponse.json({ error: pageError.message }, { status: 500 })
+
+      // Insert or update sections linked to the base page
+      if (sections && sections.length > 0 && pageBase && pageBase.id) {
+            // For simplicity, delete existing sections and re-insert (idempotent for admin save)
+            await supabase.from('cms_page_sections').delete().eq('page_id', pageBase.id)
+            const insertSections = sections.map((s: any, i: number) => ({ page_id: pageBase.id, type: s.type, content_json: s.content_json || s.content || {}, order_index: i }))
             await supabase.from('cms_page_sections').insert(insertSections)
       }
 
-      await logAuditEvent({ entityType: 'page' as any, entityId: data.id, action: 'status_changed', metadata: { created: true } as any })
+      // Get current admin user for audit and created_by
+      const adminUser = await getCurrentUserFromCookie()
 
-      return NextResponse.json({ page: data })
+      // Create a new page version entry
+      const { data: versionData, error: versionError } = await supabase
+            .from('cms_page_versions')
+            .insert({
+                  page_key: slug,
+                  title_en: title,
+                  slug,
+                  content_en: content,
+                  seo_title,
+                  seo_description,
+                  is_published: status === 'published',
+                  published_at: status === 'published' ? new Date() : null,
+                  created_by: adminUser?.id || null
+            })
+            .select()
+            .maybeSingle()
+
+      if (versionError) return NextResponse.json({ error: versionError.message }, { status: 500 })
+
+      // If publishing, unpublish other versions for this page_key
+      if (status === 'published' && versionData && versionData.id) {
+            await supabase
+                  .from('cms_page_versions')
+                  .update({ is_published: false })
+                  .eq('page_key', slug)
+                  .neq('id', versionData.id)
+
+            await supabase
+                  .from('cms_page_versions')
+                  .update({ is_published: true, published_at: new Date() })
+                  .eq('id', versionData.id)
+      }
+
+      // Log admin action
+      await logAuditEvent({
+            entityType: 'cms_page_versions',
+            entityId: versionData?.id || pageBase?.id,
+            action: status === 'published' ? ('approved' as any) : ('status_changed' as any),
+            actorId: adminUser?.id || null,
+            metadata: { page_key: slug, title, published: status === 'published' }
+      })
+
+      return NextResponse.json({ page: pageBase, version: versionData })
 }

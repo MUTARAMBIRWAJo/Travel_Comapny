@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js'
 import React from 'react'
 import { Metadata } from 'next'
 
+export const revalidate = 60
+
 interface Section { type: string; content_json: any }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
@@ -10,11 +12,19 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
       if (!url || !key) return { title: 'Page not found' }
       const supabase = createClient(url, key)
-      const { data: page } = await supabase.from('cms_pages').select('*').eq('page_key', slug).eq('status', 'published').maybeSingle()
-      if (!page) return { title: 'Page not found' }
+      const { data: version, error: versionError } = await supabase
+        .from('cms_page_versions')
+        .select('*')
+        .eq('page_key', slug)
+        .eq('is_published', true)
+        .order('published_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (versionError) return { title: 'Page not found' }
+      if (!version) return { title: 'Page not found' }
       return {
-            title: page.seo_title || page.title,
-            description: page.seo_description,
+            title: version.seo_title || version.title_en || version.title,
+            description: version.seo_description,
       }
 }
 
@@ -26,13 +36,40 @@ export default async function Page({ params }: { params: { slug: string } }) {
             return <div>Supabase not configured</div>
       }
       const supabase = createClient(url, key)
-      const { data: page } = await supabase.from('cms_pages').select('*').eq('page_key', slug).eq('status', 'published').maybeSingle()
-      if (!page) return <div>Page not found</div>
-      const { data: sections } = await supabase.from('cms_page_sections').select('*').eq('page_id', page.id).order('order_index', { ascending: true })
+      // Get latest published version
+      const { data: version, error: versionError } = await supabase
+        .from('cms_page_versions')
+        .select('*')
+        .eq('page_key', slug)
+        .eq('is_published', true)
+        .order('published_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (versionError) return <div>Page not found</div>
+      if (!version) return <div>Page not found</div>
+
+      // Fetch base page record to obtain sections
+      const { data: pageBase } = await supabase.from('cms_pages').select('*').eq('page_key', slug).maybeSingle()
+      const { data: sections } = pageBase
+        ? await supabase.from('cms_page_sections').select('*').eq('page_id', pageBase.id).order('order_index', { ascending: true })
+        : { data: [] }
+
+      const page = {
+        page_key: version.page_key,
+        title: version.title_en || (pageBase && pageBase.title) || '',
+        content_en: version.content_en,
+        seo_title: version.seo_title,
+        seo_description: version.seo_description,
+        published_at: version.published_at,
+        last_updated: version.published_at || version.created_at
+      }
 
       return (
             <main className="prose mx-auto p-6">
                   <h1>{page.title}</h1>
+                  {page.last_updated && (
+                        <p className="text-sm text-slate-500">Last updated: {new Date(page.last_updated).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                  )}
                   {sections?.map((s: Section, i: number) => (
                         <SectionRenderer key={i} section={s} />
                   ))}

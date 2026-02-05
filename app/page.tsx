@@ -9,13 +9,26 @@ import { CurrencyConverter } from "@/components/CurrencyConverter"
 import { PriceDisplay } from "@/components/PriceDisplay"
 
 export default async function Home() {
-  // Fetch data from CMS
-  const [settings, services, packages, testimonials] = await Promise.all([
-    getGlobalSettings(),
-    getServices(),
-    getPackages(),
-    getTestimonials(true), // featured only
-  ])
+  // Fetch data from CMS with error handling
+  let settings, services, packages, testimonials
+  try {
+    [settings, services, packages, testimonials] = await Promise.all([
+      getGlobalSettings(),
+      getServices(),
+      getPackages(),
+      getTestimonials(true), // featured only
+    ])
+  } catch (error) {
+    console.log('[v0] Database connection failed, using fallback defaults:', error)
+    // Fallback defaults
+    settings = {
+      brand_name: { en: "We-Of-You Travel Company" },
+      tagline: { en: "Your Trusted Travel Partner from Rwanda to the World" }
+    }
+    services = []
+    packages = []
+    testimonials = []
+  }
 
   const brandName = settings.brand_name?.en || "We-Of-You Travel Company"
   const tagline = settings.tagline?.en || "Your Trusted Travel Partner from Rwanda to the World"

@@ -139,6 +139,53 @@ async function seedCMS() {
         status: 'published'
       }
     ];
+    
+    // 2.b SEED LEGAL PAGES AND INITIAL PUBLISHED VERSIONS
+    console.log('Seeding legal pages and initial versions...');
+    const legalPages = [
+      {
+        page_key: 'privacy_policy',
+        slug: 'privacy-policy',
+        title_en: 'Privacy Policy',
+        content_en: `This Privacy Policy explains how We-Of-You Travel Company ("the Platform") collects, uses, stores, and discloses personal information. The Platform acts as an intermediary service provider facilitating travel-related services and does not provide legal advice. We collect information necessary to provide travel bookings, visa assistance, and customer support, including contact details and travel document identifiers when required for service delivery. We use industry-standard safeguards to protect personal data in transit and at rest. Where applicable, data may be shared with third-party service providers (airlines, hotels, and payment processors) to fulfil bookings. This Policy references applicable Rwandan data protection requirements at a high level. For specific legal obligations and compliance guidance, please consult a qualified legal advisor.`
+      },
+      {
+        page_key: 'terms_conditions',
+        slug: 'terms-and-conditions',
+        title_en: 'Terms & Conditions',
+        content_en: `These Terms & Conditions govern your use of the Platform and the services provided through it. The Platform operates as an intermediary connecting users with travel services, third-party providers, and agents. All bookings, refunds, and ticketing are subject to the terms of the relevant service providers and carriers. The Platform does not guarantee visa approvals or regulatory outcomes. Users are responsible for providing accurate information and complying with applicable entry, health, and immigration requirements. By using the Platform you agree to these Terms. This document is not legal advice; for binding interpretations seek legal counsel.`
+      },
+      {
+        page_key: 'travel_liability_disclaimer',
+        slug: 'travel-liability-disclaimer',
+        title_en: 'Travel Liability Disclaimer',
+        content_en: `The Platform assists with travel arrangements but is not liable for outcomes determined by third-party carriers, consulates, or immigration authorities. Travel involves inherent risks including changes to schedules, cancellations, health requirements, and visa decisions. The Platform uses commercially reasonable efforts to provide accurate information; however, it does not guarantee results. Clients should purchase appropriate travel insurance and verify requirements with official authorities. This disclaimer is informational and does not replace professional legal advice.`
+      },
+      {
+        page_key: 'data_protection_notice',
+        slug: 'data-protection-notice',
+        title_en: 'Data Protection Notice',
+        content_en: `We collect and process personal data to provide travel services. Processing purposes include booking management, identity verification, payment processing, and customer support. The Platform implements technical and organizational measures to protect personal data. Retention periods are determined by service needs and legal obligations. Data subjects may exercise rights to access, correct, or request deletion of their data as permitted by law. This Notice provides a general overview and does not constitute legal advice; please consult a qualified advisor for specific data protection guidance.`
+      },
+      {
+        page_key: 'cookies_policy',
+        slug: 'cookies-policy',
+        title_en: 'Cookies Policy',
+        content_en: `Our website uses cookies and similar technologies to improve user experience, analyze usage, and support essential functionality. Cookies may be set by the Platform or by third-party services integrated into the site. Users may manage cookie preferences through browser settings or provided preference tools. Disabling some cookies may affect site functionality. This Policy is informational and should be reviewed alongside our Privacy Policy.`
+      },
+      {
+        page_key: 'corporate_travel_policy_template',
+        slug: 'corporate-travel-policy-template',
+        title_en: 'Corporate Travel Policy Template',
+        content_en: `This template provides a starting point for organisations to document corporate travel rules and approvals. It covers policy scope, booking rules, expense controls, traveller safety, and duty of care recommendations. The template is generic and should be customised to your organisation's legal, regulatory, and tax requirements. It does not replace professional legal or compliance advice; consult qualified counsel when adopting policies for your organisation.`
+      },
+      {
+        page_key: 'government_regulatory_notice',
+        slug: 'government-regulatory-notice',
+        title_en: 'Government & Regulatory Compliance Notice',
+        content_en: `The Platform operates in accordance with applicable laws and regulations. Where relevant, references to Rwandan regulatory frameworks are provided at a high level. Compliance responsibilities for bookings, visas, and health requirements generally fall to the traveller and the issuing authorities. The Platform does not provide regulatory approvals or guarantees. For authoritative guidance, contact the relevant government agency or seek professional legal advice.`
+      }
+    ];
 
     for (const page of pages) {
       const query = `
@@ -156,6 +203,30 @@ async function seedCMS() {
     }
     console.log('✓ Pages seeded\n');
 
+    // Insert legal pages as base pages and initial published versions
+    for (const lp of legalPages) {
+      const upsertPage = `
+        INSERT INTO cms_pages (page_key, title_en, title_rw, title_fr, slug, status, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, 'published', $6, $7)
+        ON CONFLICT (page_key) DO UPDATE SET
+          title_en = EXCLUDED.title_en,
+          title_rw = EXCLUDED.title_rw,
+          title_fr = EXCLUDED.title_fr,
+          slug = EXCLUDED.slug,
+          status = EXCLUDED.status,
+          updated_at = EXCLUDED.updated_at
+        RETURNING id
+      `;
+      const res = await client.query(upsertPage, [lp.page_key, lp.title_en, lp.title_en, lp.title_en, lp.slug, new Date(), new Date()]);
+      const pageId = res.rows && res.rows[0] && res.rows[0].id ? res.rows[0].id : null;
+
+      const insertVersion = `
+        INSERT INTO cms_page_versions (page_key, title_en, slug, content_en, is_published, published_at, created_by, created_at)
+        VALUES ($1, $2, $3, $4, true, $5, NULL, $6)
+      `;
+      await client.query(insertVersion, [lp.page_key, lp.title_en, lp.slug, lp.content_en, new Date(), new Date()]);
+    }
+    
     // 3. SEED SERVICES
     console.log('Seeding services...');
     const services = [

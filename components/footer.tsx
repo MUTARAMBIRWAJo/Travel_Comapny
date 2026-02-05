@@ -53,13 +53,38 @@ export function Footer() {
             <h4 className="font-semibold mb-4">Legal</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/privacy" className="nav-link">
+                <Link href="/privacy-policy" className="nav-link">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="nav-link">
+                <Link href="/terms-and-conditions" className="nav-link">
                   Terms & Conditions
+                </Link>
+              </li>
+              <li>
+                <Link href="/travel-liability-disclaimer" className="nav-link">
+                  Travel Liability Disclaimer
+                </Link>
+              </li>
+              <li>
+                <Link href="/data-protection-notice" className="nav-link">
+                  Data Protection Notice
+                </Link>
+              </li>
+              <li>
+                <Link href="/cookies-policy" className="nav-link">
+                  Cookies Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/corporate-travel-policy-template" className="nav-link">
+                  Corporate Travel Policy Template
+                </Link>
+              </li>
+              <li>
+                <Link href="/government-regulatory-notice" className="nav-link">
+                  Government & Regulatory Notice
                 </Link>
               </li>
             </ul>
