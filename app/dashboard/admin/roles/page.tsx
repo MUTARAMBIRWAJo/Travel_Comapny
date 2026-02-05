@@ -23,7 +23,7 @@ export default function AdminRolesPage() {
       async function fetchRoles() {
             setLoading(true)
             try {
-                  const res = await fetch('/api/admin/roles')
+                  const res = await fetch('/api/admin/roles', { credentials: 'include' })
                   const json = await res.json()
                   if (res.ok) setRoles(json.roles || [])
                   else setError(json.error || 'Failed to load')
@@ -38,7 +38,12 @@ export default function AdminRolesPage() {
             e.preventDefault()
             setError(null)
             try {
-                  const res = await fetch('/api/admin/roles', { method: 'POST', body: JSON.stringify(form), headers: { 'Content-Type': 'application/json' } })
+                  const res = await fetch('/api/admin/roles', {
+                        method: 'POST',
+                        body: JSON.stringify(form),
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                  })
                   const json = await res.json()
                   if (!res.ok) setError(json.error || 'Failed to create')
                   else {
@@ -56,7 +61,12 @@ export default function AdminRolesPage() {
             if (!editingRole) return
             setError(null)
             try {
-                  const res = await fetch(`/api/admin/roles/${editingRole.id}`, { method: 'PUT', body: JSON.stringify(editForm), headers: { 'Content-Type': 'application/json' } })
+                  const res = await fetch(`/api/admin/roles/${editingRole.id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(editForm),
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                  })
                   const json = await res.json()
                   if (!res.ok) setError(json.error || 'Failed to update')
                   else {
@@ -71,7 +81,7 @@ export default function AdminRolesPage() {
       async function deleteRole(id: string) {
             if (!confirm('Are you sure you want to delete this role?')) return
             try {
-                  const res = await fetch(`/api/admin/roles/${id}`, { method: 'DELETE' })
+                  const res = await fetch(`/api/admin/roles/${id}`, { method: 'DELETE', credentials: 'include' })
                   if (res.ok) fetchRoles()
                   else setError('Failed to delete')
             } catch (err: any) {

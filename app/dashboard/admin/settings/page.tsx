@@ -21,7 +21,7 @@ export default function AdminSiteSettingsPage() {
       async function fetchSettings() {
             setLoading(true)
             try {
-                  const res = await fetch('/api/admin/site-settings')
+                  const res = await fetch('/api/admin/site-settings', { credentials: 'include' })
                   const json = await res.json()
                   if (res.ok) setSettings(json.settings || [])
                   else setError(json.error || 'Failed to load')
@@ -38,7 +38,8 @@ export default function AdminSiteSettingsPage() {
                   const res = await fetch('/api/admin/site-settings', {
                         method: 'POST',
                         body: JSON.stringify({ key, value, type: setting?.type || 'string', description: setting?.description }),
-                        headers: { 'Content-Type': 'application/json' }
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
                   })
                   const json = await res.json()
                   if (!res.ok) setError(json.error || 'Failed to update')
