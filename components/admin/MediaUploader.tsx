@@ -30,7 +30,7 @@ export function MediaUploader() {
 
   const checkAuth = async () => {
     try {
-      const res = await fetch('/api/admin/auth-check')
+      const res = await fetch('/api/admin/auth-check', { credentials: 'include' })
       if (res.ok) {
         setAuthenticated(true)
         fetchMedia()
@@ -43,8 +43,9 @@ export function MediaUploader() {
   }
 
   const fetchMedia = async () => {
+    setLoading(true)
     try {
-      const res = await fetch('/api/admin/media')
+      const res = await fetch('/api/admin/media', { credentials: 'include' })
       const json = await res.json()
       if (res.ok) {
         const items = (json.media || []).map((m: any) => ({
@@ -87,15 +88,15 @@ export function MediaUploader() {
 
   const handleFiles = async (files: FileList) => {
     Array.from(files).forEach(async (file) => {
-      const id = crypto.randomUUID()
-      setUploadProgress((prev) => ({ ...prev, [id]: 0 }))
+      const uploadId = crypto.randomUUID()
+      setUploadProgress((prev) => ({ ...prev, [uploadId]: 0 }))
 
       // Upload to API
       const formData = new FormData()
       formData.append('file', file)
 
       try {
-        const res = await fetch('/api/admin/media/upload', { method: 'POST', body: formData })
+        const res = await fetch('/api/admin/media/upload', { method: 'POST', body: formData, credentials: 'include' })
         const json = await res.json()
         if (res.ok) {
           const mediaItem: MediaItem = {
@@ -107,12 +108,12 @@ export function MediaUploader() {
             uploadedAt: new Date(),
           }
           setMedia((prev) => [mediaItem, ...prev])
-          setUploadProgress((prev) => ({ ...prev, [id]: 100 }))
+          setUploadProgress((prev) => ({ ...prev, [uploadId]: 100 }))
         } else {
           alert(json.error || 'Upload failed')
           setUploadProgress((prev) => {
             const newProgress = { ...prev }
-            delete newProgress[id]
+            delete newProgress[uploadId]
             return newProgress
           })
         }
@@ -120,7 +121,7 @@ export function MediaUploader() {
         alert('Upload failed')
         setUploadProgress((prev) => {
           const newProgress = { ...prev }
-          delete newProgress[id]
+          delete newProgress[uploadId]
           return newProgress
         })
       }
@@ -130,7 +131,7 @@ export function MediaUploader() {
   const deleteMedia = async (id: string) => {
     if (!confirm('Are you sure you want to delete this media?')) return
     try {
-      const res = await fetch(`/api/admin/media/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/admin/media/${id}`, { method: 'DELETE', credentials: 'include' })
       if (res.ok) {
         setMedia((prev) => prev.filter((m) => m.id !== id))
       } else {
@@ -184,118 +185,74 @@ export function MediaUploader() {
         </CardContent>
       </Card>
 
-      return (
-      <div className="space-y-6">
-        {/* Upload Area */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Upload Media</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-lg p-12 text-center transition ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground"
-                }`}
-            >
-              <label className="cursor-pointer space-y-3">
-                <Upload className="w-12 h-12 mx-auto text-muted-foreground" />
-                <div>
-                  <p className="text-lg font-semibold">Drag and drop files here</p>
-                  <p className="text-sm text-muted-foreground">or click to browse</p>
-                </div>
-                <p className="text-xs text-muted-foreground">Supports images, videos, and documents</p>
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleFileInput}
-                  accept="image/*,video/*,.pdf,.doc,.docx"
-                  hidden
-                />
-              </label>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Media Grid */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Media Library ({media.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div>Loading media...</div>
+          ) : media.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No media uploaded yet</div>
+          ) : (
+            <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {media.map((item) => {
+                return (
+                  <div key={item.id} className="border rounded-lg overflow-hidden group hover:shadow-lg transition">
+                    {/* Media Preview */}
+                    <div className="relative w-full aspect-square bg-muted flex items-center justify-center overflow-hidden">
+                      {item.type === "image" ? (
+                        <Image
+                          src={item.url || "/placeholder.svg"}
+                          alt={item.name}
+                          fill
+                          sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+                          className="object-cover group-hover:scale-110 transition-transform"
+                        />
+                      ) : item.type === "video" ? (
+                        <>
+                          <Video className="w-8 h-8 text-muted-foreground" />
+                          {item.url && <video src={item.url} className="w-full h-full object-cover absolute" />}
+                        </>
+                      ) : (
+                        <File className="w-8 h-8 text-muted-foreground" />
+                      )}
 
-        {/* Media Grid */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Media Library ({media.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div>Loading media...</div>
-            ) : media.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No media uploaded yet</div>
-            ) : (
-              <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {media.map((item) => {
-                  const progress = uploadProgress[item.id] || 100
-                  const isUploading = progress < 100
-
-                  return (
-                    <div key={item.id} className="border rounded-lg overflow-hidden group hover:shadow-lg transition">
-                      {/* Media Preview */}
-                      <div className="relative w-full aspect-square bg-muted flex items-center justify-center overflow-hidden">
-                        {item.type === "image" ? (
-                          <Image src={item.url || "/placeholder.svg"} alt={item.name} fill className="object-cover group-hover:scale-110 transition-transform" />
-                        ) : item.type === "video" ? (
-                          <>
-                            <Video className="w-8 h-8 text-muted-foreground" />
-                            {item.url && <video src={item.url} className="w-full h-full object-cover absolute" />}
-                          </>
-                        ) : (
-                          <File className="w-8 h-8 text-muted-foreground" />
-                        )}
-
-                        {/* Upload Progress */}
-                        {isUploading && (
-                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                            <div className="text-center text-white">
-                              <div className="text-sm font-medium">{Math.round(progress)}%</div>
-                              <div className="w-16 h-1 bg-white/30 rounded-full mt-1 overflow-hidden">
-                                <div
-                                  className="h-full bg-white transition-all"
-                                  style={{ width: `${progress}%` }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Delete Button */}
-                        {!isUploading && (
-                          <button
-                            onClick={() => deleteMedia(item.id)}
-                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded opacity-0 group-hover:opacity-100 transition"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-
-                      {/* File Info */}
-                      <div className="p-3">
-                        <p className="text-xs font-medium truncate" title={item.name}>
-                          {item.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{formatFileSize(item.size)}</p>
-                        {!isUploading && (
-                          <Button variant="outline" size="sm" className="w-full mt-2 text-xs bg-transparent" onClick={() => navigator.clipboard.writeText(item.url)}>
-                            Copy Link
-                          </Button>
-                        )}
-                      </div>
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => deleteMedia(item.id)}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded opacity-0 group-hover:opacity-100 transition"
+                        aria-label={`Delete ${item.name}`}
+                        type="button"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                  )
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-      )
+
+                    {/* File Info */}
+                    <div className="p-3">
+                      <p className="text-xs font-medium truncate" title={item.name}>
+                        {item.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(item.size)}</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full mt-2 text-xs bg-transparent"
+                        onClick={() => navigator.clipboard.writeText(item.url)}
+                        type="button"
+                      >
+                        Copy Link
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

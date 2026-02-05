@@ -50,7 +50,7 @@ export default function ContentManagementPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null)
 
   React.useEffect(() => {
-    fetch('/api/admin/auth-check')
+    fetch('/api/admin/auth-check', { credentials: 'include' })
       .then(res => {
         if (res.ok) {
           setAuthenticated(true)

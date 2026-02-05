@@ -1,18 +1,22 @@
-const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config({ path: '.local.env' });
+const { Client } = require('pg');
 const bcrypt = require('bcryptjs');
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const databaseUrl = process.env.DATABASE_URL;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing Supabase credentials');
+if (!databaseUrl) {
+  console.error('Missing DATABASE_URL environment variable');
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const client = new Client({
+  connectionString: databaseUrl,
+  ssl: { rejectUnauthorized: false }
+});
 
 async function seedCMS() {
   try {
+    await client.connect();
     console.log('Starting CMS seed for We-Of-You Travel Company...\n');
 
     // 1. SEED GLOBAL SETTINGS
@@ -77,11 +81,17 @@ async function seedCMS() {
     ];
 
     for (const setting of globalSettings) {
-      const { error } = await supabase.from('cms_global_settings').upsert(
-        { ...setting, updated_at: new Date() },
-        { onConflict: 'key' }
-      );
-      if (error) console.error('Error seeding global setting:', error);
+      const query = `
+        INSERT INTO cms_global_settings (key, value_en, value_rw, value_fr, type, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (key) DO UPDATE SET
+          value_en = EXCLUDED.value_en,
+          value_rw = EXCLUDED.value_rw,
+          value_fr = EXCLUDED.value_fr,
+          type = EXCLUDED.type,
+          updated_at = EXCLUDED.updated_at
+      `;
+      await client.query(query, [setting.key, setting.value_en, setting.value_rw, setting.value_fr, setting.type, new Date()]);
     }
     console.log('✓ Global settings seeded\n');
 
@@ -130,10 +140,20 @@ async function seedCMS() {
       }
     ];
 
-    const { data: pageData, error: pageError } = await supabase
-      .from('cms_pages')
-      .upsert(pages, { onConflict: 'page_key' });
-    if (pageError) console.error('Error seeding pages:', pageError);
+    for (const page of pages) {
+      const query = `
+        INSERT INTO cms_pages (page_key, title_en, title_rw, title_fr, slug, status, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT (page_key) DO UPDATE SET
+          title_en = EXCLUDED.title_en,
+          title_rw = EXCLUDED.title_rw,
+          title_fr = EXCLUDED.title_fr,
+          slug = EXCLUDED.slug,
+          status = EXCLUDED.status,
+          updated_at = EXCLUDED.updated_at
+      `;
+      await client.query(query, [page.page_key, page.title_en, page.title_rw, page.title_fr, page.slug, page.status, new Date(), new Date()]);
+    }
     console.log('✓ Pages seeded\n');
 
     // 3. SEED SERVICES
@@ -201,8 +221,18 @@ async function seedCMS() {
       }
     ];
 
-    const { error: serviceError } = await supabase.from('cms_services').insert(services);
-    if (serviceError) console.error('Error seeding services:', serviceError);
+    for (const service of services) {
+      const query = `
+        INSERT INTO cms_services (title_en, title_rw, title_fr, slug, short_description_en, short_description_rw, short_description_fr, full_description_en, full_description_rw, full_description_fr, icon, status, order_index, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      `;
+      await client.query(query, [
+        service.title_en, service.title_rw, service.title_fr, service.slug,
+        service.short_description_en, service.short_description_rw, service.short_description_fr,
+        service.full_description_en, service.full_description_rw, service.full_description_fr,
+        service.icon, service.status, service.order_index, new Date(), new Date()
+      ]);
+    }
     console.log('✓ Services seeded\n');
 
     // 4. SEED DESTINATIONS
@@ -270,8 +300,21 @@ async function seedCMS() {
       }
     ];
 
-    const { error: destError } = await supabase.from('cms_destinations').insert(destinations);
-    if (destError) console.error('Error seeding destinations:', destError);
+    for (const dest of destinations) {
+      const query = `
+        INSERT INTO cms_destinations (name_en, name_rw, name_fr, visa_info_en, visa_info_rw, visa_info_fr, cultural_tips_en, cultural_tips_rw, cultural_tips_fr, flight_routes, safety_notes_en, safety_notes_rw, safety_notes_fr, food_notes_en, food_notes_rw, food_notes_fr, status, order_index, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+      `;
+      await client.query(query, [
+        dest.name_en, dest.name_rw, dest.name_fr,
+        dest.visa_info_en, dest.visa_info_rw, dest.visa_info_fr,
+        dest.cultural_tips_en, dest.cultural_tips_rw, dest.cultural_tips_fr,
+        dest.flight_routes,
+        dest.safety_notes_en, dest.safety_notes_rw, dest.safety_notes_fr,
+        dest.food_notes_en, dest.food_notes_rw, dest.food_notes_fr,
+        dest.status, dest.order_index, new Date(), new Date()
+      ]);
+    }
     console.log('✓ Destinations seeded\n');
 
     // 5. SEED TESTIMONIALS
@@ -312,8 +355,17 @@ async function seedCMS() {
       }
     ];
 
-    const { error: testError } = await supabase.from('cms_testimonials').insert(testimonials);
-    if (testError) console.error('Error seeding testimonials:', testError);
+    for (const test of testimonials) {
+      const query = `
+        INSERT INTO cms_testimonials (customer_name, customer_title, customer_location, message_en, message_rw, message_fr, is_featured, status, order_index, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `;
+      await client.query(query, [
+        test.customer_name, test.customer_title, test.customer_location,
+        test.message_en, test.message_rw, test.message_fr,
+        test.is_featured, test.status, test.order_index, new Date(), new Date()
+      ]);
+    }
     console.log('✓ Testimonials seeded\n');
 
     // 6. SEED PACKAGES
@@ -360,8 +412,17 @@ async function seedCMS() {
       }
     ];
 
-    const { error: pkgError } = await supabase.from('cms_packages').insert(packages);
-    if (pkgError) console.error('Error seeding packages:', pkgError);
+    for (const pkg of packages) {
+      const query = `
+        INSERT INTO cms_packages (title_en, title_rw, title_fr, duration, includes_en, includes_rw, includes_fr, price_rwf, price_usd, status, order_index, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      `;
+      await client.query(query, [
+        pkg.title_en, pkg.title_rw, pkg.title_fr, pkg.duration,
+        pkg.includes_en, pkg.includes_rw, pkg.includes_fr,
+        pkg.price_rwf, pkg.price_usd, pkg.status, pkg.order_index, new Date(), new Date()
+      ]);
+    }
     console.log('✓ Packages seeded\n');
 
     // 7. SEED FAQs
@@ -413,8 +474,17 @@ async function seedCMS() {
       }
     ];
 
-    const { error: faqError } = await supabase.from('cms_faqs').insert(faqs);
-    if (faqError) console.error('Error seeding FAQs:', faqError);
+    for (const faq of faqs) {
+      const query = `
+        INSERT INTO cms_faqs (question_en, question_rw, question_fr, answer_en, answer_rw, answer_fr, category, status, order_index, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `;
+      await client.query(query, [
+        faq.question_en, faq.question_rw, faq.question_fr,
+        faq.answer_en, faq.answer_rw, faq.answer_fr,
+        faq.category, faq.status, faq.order_index, new Date(), new Date()
+      ]);
+    }
     console.log('✓ FAQs seeded\n');
 
     console.log('✅ CMS seed completed successfully!');
@@ -422,6 +492,8 @@ async function seedCMS() {
   } catch (error) {
     console.error('Seed error:', error);
     process.exit(1);
+  } finally {
+    await client.end();
   }
 }
 

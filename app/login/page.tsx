@@ -31,6 +31,8 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        // Ensure the browser stores/sends the httpOnly session cookie
+        credentials: "include",
       })
 
       const data = await response.json()
@@ -40,15 +42,21 @@ export default function LoginPage() {
         return
       }
 
+      const role = (data.user.role || "").toString().toLowerCase()
+
       const roleDashboards: Record<string, string> = {
-        ADMIN: "/dashboard/admin",
-        TRAVEL_AGENT: "/dashboard/agent",
-        CORPORATE_CLIENT: "/dashboard/corporate-client",
-        CORPORATE_EMPLOYEE: "/dashboard/employee",
-        INDIVIDUAL_TRAVELER: "/dashboard/traveler",
+        admin: "/dashboard/admin",
+        administrator: "/dashboard/admin",
+        travel_agent: "/dashboard/agent",
+        agent: "/dashboard/agent",
+        corporate_client: "/dashboard/corporate-client",
+        corporate_employee: "/dashboard/employee",
+        employee: "/dashboard/employee",
+        traveler: "/dashboard/traveler",
+        individual_traveler: "/dashboard/traveler",
       }
 
-      const dashboard = roleDashboards[data.user.role] || "/dashboard/traveler"
+      const dashboard = roleDashboards[role] || "/dashboard/traveler"
       router.push(dashboard)
     } catch (err) {
       setError("An unexpected error occurred")
