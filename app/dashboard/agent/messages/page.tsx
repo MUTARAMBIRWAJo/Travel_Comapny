@@ -21,11 +21,22 @@ export default function AgentMessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [userId] = useState("agent-id")
+  const [userId, setUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch("/api/auth/session", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.user?.id) setUserId(data.user.id)
+      })
+      .catch(() => {})
+  }, [])
 
   const fetchConversations = useCallback(async () => {
+    if (!userId) return
+    setLoading(true)
     try {
-      const response = await fetch(`/api/conversations?userId=${userId}`)
+      const response = await fetch(`/api/conversations?userId=${userId}`, { credentials: "include" })
       if (!response.ok) throw new Error("Failed to fetch conversations")
       const data = await response.json()
       setConversations(data.conversations || [])
@@ -37,8 +48,9 @@ export default function AgentMessagesPage() {
   }, [userId])
 
   useEffect(() => {
-    fetchConversations()
-  }, [fetchConversations])
+    if (userId) fetchConversations()
+    else setLoading(false)
+  }, [userId, fetchConversations])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -113,7 +125,12 @@ export default function AgentMessagesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {selectedConversation ? (
+          {!userId ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Loader2 className="w-8 h-8 animate-spin mb-4" />
+              <p>Loading session...</p>
+            </div>
+          ) : selectedConversation ? (
             <ConversationChat
               conversationId={selectedConversation}
               userId={userId}

@@ -1,13 +1,26 @@
 import bcrypt from "bcryptjs"
 import { createClient } from "@supabase/supabase-js"
 import { type NextRequest, NextResponse } from "next/server"
+import { rateLimitResponse, AUTH_RATE_LIMIT } from "@/lib/rate-limit-api"
+import { validatePassword, getPasswordPolicyDescription } from "@/lib/password-policy"
 
 export async function POST(request: NextRequest) {
+  const rl = rateLimitResponse(request, AUTH_RATE_LIMIT)
+  if (rl) return rl
+
   try {
     const { fullName, email, password, role } = (await request.json()) as { fullName: string; email: string; password: string; role: string }
 
     if (!fullName || !email || !password || !role) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    const passwordValidation = validatePassword(password)
+    if (!passwordValidation.valid) {
+      return NextResponse.json(
+        { error: "Password does not meet requirements", details: passwordValidation.errors, policy: getPasswordPolicyDescription() },
+        { status: 400 }
+      )
     }
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL

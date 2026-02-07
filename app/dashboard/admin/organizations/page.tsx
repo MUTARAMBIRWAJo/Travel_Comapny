@@ -9,15 +9,23 @@ import { Trash2, Edit } from "lucide-react"
 
 export default function AdminOrganizationsPage() {
       const [organizations, setOrganizations] = React.useState<any[]>([])
+      const [users, setUsers] = React.useState<any[]>([])
       const [loading, setLoading] = React.useState(false)
       const [formOpen, setFormOpen] = React.useState(false)
       const [form, setForm] = React.useState({ name: '', billing_email: '' })
       const [editingOrg, setEditingOrg] = React.useState<any | null>(null)
-      const [editForm, setEditForm] = React.useState({ name: '', billing_email: '', settings: {} })
+      const [editForm, setEditForm] = React.useState({ name: '', billing_email: '', settings: {} as Record<string, unknown>, admin_user_id: '' })
       const [error, setError] = React.useState<string | null>(null)
 
       React.useEffect(() => {
             fetchOrganizations()
+      }, [])
+
+      React.useEffect(() => {
+            fetch('/api/admin/users', { credentials: 'include' })
+                  .then((r) => r.json())
+                  .then((d) => setUsers(d.users || []))
+                  .catch(() => {})
       }, [])
 
       async function fetchOrganizations() {
@@ -81,7 +89,12 @@ export default function AdminOrganizationsPage() {
 
       function startEdit(org: any) {
             setEditingOrg(org)
-            setEditForm({ name: org.name || '', billing_email: org.billing_email || '', settings: org.settings || {} })
+            setEditForm({
+              name: org.name || '',
+              billing_email: org.billing_email || '',
+              settings: org.settings || {},
+              admin_user_id: org.admin_user_id ?? '',
+            })
       }
 
       return (
@@ -115,9 +128,15 @@ export default function AdminOrganizationsPage() {
                   {editingOrg && (
                         <form onSubmit={updateOrganization} className="p-4 bg-muted rounded">
                               <h3 className="font-semibold mb-2">Edit Organization: {editingOrg.name}</h3>
-                              <div className="flex gap-2 mb-2">
+                              <div className="flex flex-wrap gap-2 mb-2">
                                     <Input placeholder="Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
                                     <Input placeholder="Billing email" value={editForm.billing_email} onChange={(e) => setEditForm({ ...editForm, billing_email: e.target.value })} />
+                                    <select className="border p-2 rounded" value={editForm.admin_user_id} onChange={(e) => setEditForm({ ...editForm, admin_user_id: e.target.value })}>
+                                          <option value="">No admin</option>
+                                          {users.map((u) => (
+                                            <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
+                                          ))}
+                                    </select>
                               </div>
                               <div className="flex gap-2">
                                     <Button type="submit">Update</Button>

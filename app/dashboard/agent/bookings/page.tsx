@@ -51,8 +51,11 @@ export default function AgentBookingsPage() {
                     )}
                     {b.status}
                   </Badge>
-                  <Link href={`/dashboard/agent/requests`}>
-                    <Button variant="outline" size="sm">View Request</Button>
+                  <Link href={`/dashboard/agent/bookings/${b.id}`}>
+                    <Button variant="outline" size="sm">View details</Button>
+                  </Link>
+                  <Link href={`/dashboard/agent/requests?bookingId=${b.id}`}>
+                    <Button variant="ghost" size="sm">Request</Button>
                   </Link>
                 </div>
               </div>

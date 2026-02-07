@@ -33,10 +33,11 @@ export async function PUT(request: any, context: any) {
       const supabase = createClient(url, key)
       const { data: before } = await supabase.from('companies').select('*').eq('id', id).maybeSingle()
 
-      const updates: any = {}
-      if (body.name) updates.name = body.name
-      if (body.billing_email) updates.billing_email = body.billing_email
+      const updates: Record<string, unknown> = {}
+      if (body.name !== undefined) updates.name = body.name
+      if (body.billing_email !== undefined) updates.billing_email = body.billing_email
       if (body.settings !== undefined) updates.settings = body.settings
+      if (body.admin_user_id !== undefined) updates.admin_user_id = body.admin_user_id || null
 
       const { data: updated, error } = await supabase.from('companies').update(updates).eq('id', id).select().maybeSingle()
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })

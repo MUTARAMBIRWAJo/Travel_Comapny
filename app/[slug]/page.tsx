@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import React from 'react'
 import { Metadata } from 'next'
+import { Navbar } from '@/components/navbar'
+import { Footer } from '@/components/footer'
 
 export const revalidate = 60
 
@@ -50,13 +52,17 @@ export default async function Page({ params }: { params: { slug: string } }) {
 
       // Fetch base page record to obtain sections
       const { data: pageBase } = await supabase.from('cms_pages').select('*').eq('page_key', slug).maybeSingle()
-      const { data: sections } = pageBase
+      const { data: rawSections } = pageBase
         ? await supabase.from('cms_page_sections').select('*').eq('page_id', pageBase.id).order('order_index', { ascending: true })
         : { data: [] }
+      const sections: Section[] = (rawSections || []).map((s: any) => ({
+        type: s.type || s.section_type || 'text',
+        content_json: s.content_json || (s.content_en != null ? { text: s.content_en } : {}),
+      }))
 
       const page = {
         page_key: version.page_key,
-        title: version.title_en || (pageBase && pageBase.title) || '',
+        title: version.title_en || (pageBase && ((pageBase as any).title || (pageBase as any).title_en)) || '',
         content_en: version.content_en,
         seo_title: version.seo_title,
         seo_description: version.seo_description,
@@ -65,15 +71,21 @@ export default async function Page({ params }: { params: { slug: string } }) {
       }
 
       return (
-            <main className="prose mx-auto p-6">
-                  <h1>{page.title}</h1>
-                  {page.last_updated && (
-                        <p className="text-sm text-slate-500">Last updated: {new Date(page.last_updated).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' })}</p>
-                  )}
-                  {sections?.map((s: Section, i: number) => (
-                        <SectionRenderer key={i} section={s} />
-                  ))}
-            </main>
+            <>
+                  <Navbar />
+                  <main className="min-h-screen">
+                        <div className="prose mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-12">
+                              <h1>{page.title}</h1>
+                              {page.last_updated && (
+                                    <p className="text-sm text-muted-foreground">Last updated: {new Date(page.last_updated).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                              )}
+                              {sections.map((s, i) => (
+                                    <SectionRenderer key={i} section={s} />
+                              ))}
+                        </div>
+                  </main>
+                  <Footer />
+            </>
       )
 }
 

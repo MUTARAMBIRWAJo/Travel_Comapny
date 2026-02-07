@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { canTransition, REQUEST_STATUSES } from "@/lib/request-status"
 import { logAuditEvent } from "@/lib/audit"
+import { emitWorkflowEvent } from "@/lib/workflow"
 
 const LEGACY_STATUS_MAP: Record<string, string> = {
   pending: "submitted",
@@ -109,6 +110,16 @@ export async function POST(request: NextRequest) {
       actorId: userId,
     })
 
+    if (initialStatus === "submitted") {
+      await emitWorkflowEvent({
+        entity_type: "travel_request",
+        entity_id: travelRequest.id,
+        tenant_id: companyId,
+        event_type: "request_submitted",
+        payload: { destination, userId },
+      })
+    }
+
     return NextResponse.json({ success: true, travelRequest }, { status: 201 })
   } catch (error) {
     console.error("[v0] Create travel request error:", error)
@@ -196,6 +207,22 @@ export async function PATCH(request: NextRequest) {
       actorId: resolvedActorId,
       metadata: auditAction === "rejected" ? { rejectionReason } : undefined,
     })
+
+    if (auditAction === "approved") {
+      await emitWorkflowEvent({
+        entity_type: "travel_request",
+        entity_id: id,
+        event_type: "approval_granted",
+        payload: { approvedBy: resolvedActorId },
+      })
+    } else if (auditAction === "rejected") {
+      await emitWorkflowEvent({
+        entity_type: "travel_request",
+        entity_id: id,
+        event_type: "approval_rejected",
+        payload: { rejectionReason },
+      })
+    }
 
     return NextResponse.json({ success: true, request: updated })
   } catch (error) {

@@ -10,7 +10,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash)
 }
 
-export async function createUser(email: string, password: string, name: string, role: string, companyId?: string) {
+export async function createUser(email: string, password: string, fullName: string, role: string, companyId?: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) throw new Error('Supabase not configured')
@@ -23,10 +23,10 @@ export async function createUser(email: string, password: string, name: string, 
     .insert({
       email: email.toLowerCase(),
       password_hash: passwordHash,
-      name,
+      full_name: fullName,
       role,
       company_id: companyId || null,
-      preferred_language: "EN",
+      preferred_language: "en",
       preferred_currency: "USD",
       status: "active",
     })

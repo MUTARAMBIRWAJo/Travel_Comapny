@@ -28,8 +28,8 @@ function PagesList() {
       {pages.map((page) => (
         <Card key={page.id} className="hover:shadow-lg transition">
           <CardHeader>
-            <CardTitle className="text-lg">{page.title}</CardTitle>
-            <CardDescription>{page.page_key} • {page.status}</CardDescription>
+            <CardTitle className="text-lg">{page.title || (page as any).title_en}</CardTitle>
+            <CardDescription>{page.page_key} • {page.status || 'draft'}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-x-2">

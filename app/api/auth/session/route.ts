@@ -1,6 +1,8 @@
-﻿import { cookies } from 'next/headers'
+import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function GET() {
   try {
@@ -18,8 +20,21 @@ export async function GET() {
     }
 
     const supabase = createClient(url, key)
-    const decoded = Buffer.from(sessionToken, 'base64').toString('utf-8')
-    const userId = decoded.split(':')[0]
+    let userId: string | null = null
+
+    if (UUID_REGEX.test(sessionToken)) {
+      const { data: session, error: sessionError } = await supabase
+        .from('sessions')
+        .select('user_id, expires_at')
+        .eq('id', sessionToken)
+        .maybeSingle()
+      if (sessionError || !session) return NextResponse.json({ user: null }, { status: 200 })
+      if (new Date(session.expires_at) < new Date()) return NextResponse.json({ user: null }, { status: 200 })
+      userId = session.user_id
+    } else {
+      const decoded = Buffer.from(sessionToken, 'base64').toString('utf-8')
+      userId = decoded.split(':')[0] || null
+    }
 
     if (!userId) {
       return NextResponse.json({ user: null }, { status: 200 })

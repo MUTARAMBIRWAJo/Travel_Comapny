@@ -1,22 +1,32 @@
 import { cookies } from "next/headers"
 import { createClient } from "@supabase/supabase-js"
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
+import { getCurrentUserFromCookie } from "@/lib/admin-auth"
+import { logAccessEvent, getRequestMeta } from "@/lib/access-log"
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!url || !key) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
-    const supabase = createClient(url, key)
+    const user = await getCurrentUserFromCookie()
+    const { ipAddress, userAgent } = getRequestMeta(request)
 
     const cookieStore = await cookies()
-    const sessionToken = cookieStore.get("session_token")?.value
-
-    if (sessionToken) {
-      await supabase.from("sessions").delete().eq("token", sessionToken)
-    }
-
     cookieStore.delete("session_token")
+
+    if (user) {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+      if (url && key) {
+        const supabase = createClient(url, key)
+        await supabase.from("sessions").delete().eq("user_id", (user as { id: string }).id)
+      }
+      await logAccessEvent({
+        eventType: "logout",
+        userId: (user as { id?: string }).id,
+        email: (user as { email?: string }).email,
+        ipAddress,
+        userAgent,
+      })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

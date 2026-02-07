@@ -2,6 +2,7 @@ const dns = require('dns').promises
 const net = require('net')
 const { Client } = require('pg')
 const path = require('path')
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') })
 require('dotenv').config({ path: path.resolve(__dirname, '../.local.env') })
 
 async function tcpCheck(host, port, timeout = 5000) {
@@ -34,9 +35,9 @@ async function tcpCheck(host, port, timeout = 5000) {
 
 async function run() {
       try {
-            const databaseUrl = process.env.DATABASE_URL
+            const databaseUrl = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL
             if (!databaseUrl) {
-                  console.error('[v0] DATABASE_URL not found in environment (.local.env or secrets)')
+                  console.error('[v0] DATABASE_URL (or SUPABASE_DB_URL) not found. Set in .env or .local.env.')
                   process.exit(2)
             }
 
@@ -63,9 +64,14 @@ async function run() {
                   console.warn('[v0] TCP connection to host:port failed:', err.message)
             }
 
-            // Try actual DB connection with pg
+            // Try actual DB connection with pg (SSL for Supabase)
+            const useSsl = databaseUrl.includes('supabase.co') || databaseUrl.includes('pooler.supabase.com')
             try {
-                  const client = new Client({ connectionString: databaseUrl, statement_timeout: 5000 })
+                  const client = new Client({
+                        connectionString: databaseUrl,
+                        statement_timeout: 5000,
+                        ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+                  })
                   await client.connect()
                   const res = await client.query('SELECT 1')
                   console.log('[v0] Database connection test succeeded:', res.rows)
