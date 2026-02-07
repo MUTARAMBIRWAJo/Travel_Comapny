@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Users, TrendingUp, DollarSign, Leaf } from "lucide-react"
@@ -60,9 +61,9 @@ export default function CorporateClientDashboard() {
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-muted-foreground">{emp.role}</span>
                   <span className="text-sm font-medium">{emp.tripsBooked} trips</span>
-                  <Button variant="outline" size="sm">
-                    View
-                  </Button>
+                  <Link href="/dashboard/corporate-client/employees">
+                    <Button variant="outline" size="sm">View</Button>
+                  </Link>
                 </div>
               </div>
             ))}

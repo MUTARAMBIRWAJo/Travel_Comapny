@@ -1,6 +1,8 @@
+import Link from "next/link"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Briefcase, Users, FileText, AlertTriangle, Leaf } from "lucide-react"
 
 export const metadata = {
@@ -65,7 +67,10 @@ export default function ServicesPage() {
                       <CardTitle className="text-xl">{service.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground">{service.description}</p>
+                      <p className="text-muted-foreground mb-4">{service.description}</p>
+                      <Link href="/request-service">
+                        <Button variant="ghost" size="sm" className="text-primary">Request this service →</Button>
+                      </Link>
                     </CardContent>
                   </Card>
                 )

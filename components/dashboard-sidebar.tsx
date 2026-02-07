@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Users, FileText, Settings, LogOut, Plane, BarChart3, MessageSquare, Leaf, Shield, Building } from "lucide-react"
+import { LayoutDashboard, Users, FileText, Settings, LogOut, Plane, BarChart3, MessageSquare, Leaf, Shield, Building, DollarSign, ClipboardList } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -13,6 +13,11 @@ const dashboardNavs = {
     { label: "Role Management", href: "/dashboard/admin/roles", icon: Shield },
     { label: "Organizations", href: "/dashboard/admin/organizations", icon: Building },
     { label: "Content", href: "/dashboard/admin/content", icon: FileText },
+    { label: "Service Requests", href: "/dashboard/admin/service-requests", icon: ClipboardList },
+    { label: "Documents", href: "/dashboard/admin/documents", icon: FileText },
+    { label: "Messages", href: "/dashboard/admin/messages", icon: MessageSquare },
+    { label: "Officers", href: "/dashboard/admin/officers", icon: Users },
+    { label: "Currency", href: "/dashboard/admin/currency", icon: DollarSign },
     { label: "Analytics", href: "/dashboard/admin/analytics", icon: BarChart3 },
     { label: "Settings", href: "/dashboard/admin/settings", icon: Settings },
   ],
@@ -40,6 +45,7 @@ const dashboardNavs = {
   traveler: [
     { label: "Dashboard", href: "/dashboard/traveler", icon: LayoutDashboard },
     { label: "My Trips", href: "/dashboard/traveler/trips", icon: Plane },
+    { label: "My Requests", href: "/dashboard/traveler/requests", icon: ClipboardList },
     { label: "New Request", href: "/dashboard/traveler/request", icon: FileText },
     { label: "Profile", href: "/dashboard/traveler/profile", icon: Users },
   ],

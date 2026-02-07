@@ -205,7 +205,9 @@ export default async function Home() {
                           priceRWF={pkg.price_rwf}
                           className="mb-4"
                         />
-                        <Button className="w-full btn-primary">Book Now</Button>
+                        <Link href="/request-service">
+                          <Button className="w-full btn-primary">Book Now</Button>
+                        </Link>
                       </div>
                     </CardContent>
                   </Card>
