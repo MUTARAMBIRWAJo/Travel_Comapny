@@ -53,14 +53,14 @@ export async function GET(request: NextRequest) {
                   .lte('period_end', periodEnd.toISOString())
                   .single()
 
-            // Get current usage stats
-            const { data: stats } = await supabase
+            // Get current usage stats - count is returned separately
+            const usersResult = await supabase
                   .from('users')
                   .select('id', { count: 'exact' })
                   .eq('tenant_id', user.tenant_id)
                   .eq('status', 'active')
 
-            const { count: tripsCount } = await supabase
+            const tripsResult = await supabase
                   .from('trips')
                   .select('id', { count: 'exact' })
                   .eq('tenant_id', user.tenant_id)
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({
                   subscription,
                   usage: usage || {
-                        users_count: stats?.count || 0,
-                        trips_count: tripsCount || 0,
+                        users_count: usersResult.count || 0,
+                        trips_count: tripsResult.count || 0,
                         ai_calls_count: 0,
                         api_calls_count: 0
                   },
