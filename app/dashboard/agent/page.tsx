@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ClipboardList, Users, CheckCircle, Clock } from "lucide-react"
@@ -87,9 +88,9 @@ export default function AgentDashboard() {
                   >
                     {req.status.toUpperCase()}
                   </span>
-                  <Button variant="outline" size="sm">
-                    Details
-                  </Button>
+                  <Link href="/dashboard/agent/requests">
+                    <Button variant="outline" size="sm">Details</Button>
+                  </Link>
                 </div>
               </div>
             ))}

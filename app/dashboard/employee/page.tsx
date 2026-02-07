@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plane, Calendar, DollarSign, FileText } from "lucide-react"
@@ -77,9 +78,9 @@ export default function EmployeeDashboard() {
                   >
                     {trip.status.toUpperCase()}
                   </span>
-                  <Button variant="outline" size="sm">
-                    Details
-                  </Button>
+                  <Link href="/dashboard/employee/trips">
+                    <Button variant="outline" size="sm">Details</Button>
+                  </Link>
                 </div>
               </div>
             ))}
@@ -87,9 +88,9 @@ export default function EmployeeDashboard() {
         </CardContent>
       </Card>
 
-      <Button size="lg" className="btn-primary">
-        Create New Travel Request
-      </Button>
+      <Link href="/request-service">
+        <Button size="lg" className="btn-primary">Create New Travel Request</Button>
+      </Link>
     </div>
   )
 }
