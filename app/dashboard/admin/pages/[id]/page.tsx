@@ -45,7 +45,7 @@ export default function PageEditor({ params }: any) {
             setSections([...sections, { type: 'text', content_json: { text: 'New section' } }])
       }
 
-      function updateSection(idx: number, field: string, value: string | Record<string, unknown>) {
+      function updateSection(idx: number, field: string, value: string | Record<string, unknown> | unknown[]) {
             const copy = [...sections]
             if (field === 'type') {
                   copy[idx].type = value as string

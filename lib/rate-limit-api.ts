@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
-import { checkRateLimit, type RateLimitOptions } from "./rate-limit"
+import { checkRateLimit, type RateLimitOptions, AUTH_RATE_LIMIT, DEFAULT_PUBLIC_LIMIT } from "./rate-limit"
+
+export { AUTH_RATE_LIMIT, DEFAULT_PUBLIC_LIMIT }
 
 function getClientIdentifier(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for")

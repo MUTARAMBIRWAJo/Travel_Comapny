@@ -64,11 +64,12 @@ async function run() {
                   console.warn('[v0] TCP connection to host:port failed:', err.message)
             }
 
-            // Try actual DB connection with pg (SSL for Supabase)
+            // Try actual DB connection with pg (SSL for Supabase/pooler)
             const useSsl = databaseUrl.includes('supabase.co') || databaseUrl.includes('pooler.supabase.com')
             try {
                   const client = new Client({
                         connectionString: databaseUrl,
+                        connectionTimeoutMillis: 10000,
                         statement_timeout: 5000,
                         ssl: useSsl ? { rejectUnauthorized: false } : undefined,
                   })

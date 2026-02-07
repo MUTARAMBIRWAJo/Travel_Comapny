@@ -10,6 +10,7 @@
     "seed": "node scripts/seed.js",
     "seed:cms": "node scripts/seed-cms.js",
     "db:apply-sql": "node scripts/apply-sql.js",
+    "db:dry-run": "node scripts/apply-sql.js --dry-run",
     "db:seed": "node scripts/seed.js",
     "db:seed:cms": "node scripts/seed-cms.js",
     "migrate-and-seed": "npm run db:apply-sql && npm run db:seed && npm run db:seed:cms",

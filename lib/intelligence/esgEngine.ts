@@ -31,7 +31,7 @@ function estimateDistance(destination?: string): number {
 
 export function runEsgEngine(input: AnalyzeRequestInput): ESGResult {
   const transport = input.transport_type || "flight"
-  const distance_km = input.distance_km ?? estimateDistance(input.destination_country || input.destination_city || (input as any).destination)
+  const distance_km = input.distance_km ?? estimateDistance(input.destination_country || input.destination_city || input.destination)
   const factor = KG_CO2_PER_KM[transport] ?? KG_CO2_PER_KM.other
   const travelers = input.travelers_count ?? 1
   const estimated_kg_co2 = Math.round(distance_km * factor * travelers)
