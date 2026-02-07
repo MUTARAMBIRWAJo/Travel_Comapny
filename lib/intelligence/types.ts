@@ -58,6 +58,9 @@ export interface AnalyzeRequestInput {
   travelers_count?: number
   travel_class?: string
   transport_type?: "flight" | "train" | "car" | "other"
+  /** Distance in km (optional; ESG engine estimates if omitted) */
+  distance_km?: number
+  destination?: string
   user_id?: string
   company_id?: string
   /** Snapshot of company policy (optional) */

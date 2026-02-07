@@ -41,17 +41,19 @@ export async function GET(request: NextRequest) {
     let policy: { travel_class_rules?: string; max_budget_usd?: number; restricted_destinations?: string[] } | undefined
     if (companyId) {
       const supabase = getSupabase()
-      const { data: company } = await supabase
-        ?.from("companies")
-        .select("settings")
-        .eq("id", companyId)
-        .maybeSingle()
-      const settings = (company as { settings?: { travel_class_rules?: string; max_budget_usd?: number; restricted_destinations?: string[] } })?.settings
-      if (settings) {
-        policy = {
-          travel_class_rules: settings.travel_class_rules,
-          max_budget_usd: settings.max_budget_usd,
-          restricted_destinations: settings.restricted_destinations,
+      if (supabase) {
+        const { data: company } = await supabase
+          .from("companies")
+          .select("settings")
+          .eq("id", companyId)
+          .maybeSingle()
+        const settings = (company as { settings?: { travel_class_rules?: string; max_budget_usd?: number; restricted_destinations?: string[] } })?.settings
+        if (settings) {
+          policy = {
+            travel_class_rules: settings.travel_class_rules,
+            max_budget_usd: settings.max_budget_usd,
+            restricted_destinations: settings.restricted_destinations,
+          }
         }
       }
     }

@@ -3,8 +3,9 @@
  * Database connection diagnostic script.
  * Run: npm run db:diagnose
  *
- * Checks: env vars, DNS resolution (IPv4/IPv6), TCP connectivity, and pg connection.
- * Use this when you see getaddrinfo ENOTFOUND or ETIMEDOUT with Supabase.
+ * Use this FIRST when you see getaddrinfo ENOTFOUND or ETIMEDOUT with Supabase.
+ * Checks: env vars, DNS (IPv4 + IPv6), TCP connectivity, PostgreSQL connection.
+ * Suggests Session pooler when ENOTFOUND is detected (direct connection is IPv6-only).
  */
 
 const dns = require('dns').promises
@@ -15,15 +16,23 @@ const { Client } = require('pg')
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') })
 require('dotenv').config({ path: path.resolve(__dirname, '../.local.env') })
 
-const timeout = 8000
+const timeout = 10000
+
+// ANSI colors (work in most terminals including Windows 10+)
+const c = {
+  green: (s) => `\x1b[32m${s}\x1b[0m`,
+  red: (s) => `\x1b[31m${s}\x1b[0m`,
+  yellow: (s) => `\x1b[33m${s}\x1b[0m`,
+  dim: (s) => `\x1b[2m${s}\x1b[0m`,
+  bold: (s) => `\x1b[1m${s}\x1b[0m`,
+}
 
 function maskUrl(url) {
   try {
     const u = new URL(url)
-    const pass = u.password ? '***' : ''
-    u.password = pass
+    if (u.password) u.password = '***'
     if (u.username && u.username !== 'postgres') u.username = '***'
-    return u.toString().replace(/:[^@]*@/, pass ? ':***@' : '@')
+    return u.toString().replace(/:[^:@]*@/, ':***@')
   } catch {
     return '(invalid URL)'
   }
@@ -35,35 +44,33 @@ function tcpConnect(host, port) {
     let done = false
     s.setTimeout(timeout)
     s.once('error', (err) => {
-      if (!done) {
-        done = true
-        reject(err)
-      }
+      if (!done) { done = true; reject(err) }
     })
     s.once('timeout', () => {
-      if (!done) {
-        done = true
-        s.destroy()
-        reject(new Error('Connection timeout'))
-      }
+      if (!done) { done = true; s.destroy(); reject(new Error('Connection timeout')) }
     })
     s.connect(Number(port), host, () => {
-      if (!done) {
-        done = true
-        s.end()
-        resolve(true)
-      }
+      if (!done) { done = true; s.end(); resolve(true) }
     })
   })
 }
 
+function isDirectSupabase(host) {
+  return /^db\.[a-z0-9]+\.supabase\.co$/i.test(host)
+}
+
+function isPoolerSupabase(host) {
+  return /\.pooler\.supabase\.com$/i.test(host)
+}
+
 async function main() {
-  console.log('=== Database connection diagnostic ===\n')
+  console.log(c.bold('=== Database connection diagnostic ===\n'))
 
   const databaseUrl = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL
   if (!databaseUrl) {
-    console.error('FAIL: DATABASE_URL (or SUPABASE_DB_URL) is not set.')
+    console.error(c.red('FAIL: DATABASE_URL (or SUPABASE_DB_URL) is not set.'))
     console.error('  Set it in .env or .local.env. Load order: .env first, then .local.env.')
+    console.error('  See .env.example and MIGRATE_AND_SEED.md for Session pooler instructions.')
     process.exit(1)
   }
 
@@ -71,63 +78,73 @@ async function main() {
   try {
     parsed = new URL(databaseUrl)
   } catch (e) {
-    console.error('FAIL: DATABASE_URL is not a valid URL:', e.message)
+    console.error(c.red('FAIL: DATABASE_URL is not a valid URL:'), e.message)
     process.exit(1)
   }
 
   const host = parsed.hostname
   const port = parsed.port || '5432'
+  const isDirect = isDirectSupabase(host)
+  const isPooler = isPoolerSupabase(host)
 
-  console.log('1. Environment')
-  console.log('   DATABASE_URL set: yes')
-  console.log('   Masked URL:', maskUrl(databaseUrl))
+  // --- 1. Environment ---
+  console.log(c.bold('1. Environment variables'))
+  console.log('   DATABASE_URL or SUPABASE_DB_URL:', c.green('set'))
+  console.log('   Masked URL:', c.dim(maskUrl(databaseUrl)))
   console.log('   Host:', host)
   console.log('   Port:', port)
-  console.log('   SSL implied (supabase.co/pooler):', /supabase\.co|pooler\.supabase\.com/.test(host))
+  console.log('   Connection type:', isDirect ? c.yellow('Direct (IPv6-only)') : isPooler ? c.green('Session pooler (IPv4-friendly)') : 'Other')
+  if (isDirect) {
+    console.log(c.yellow('   ⚠ Direct host often causes ENOTFOUND on many networks. Use Session pooler instead.'))
+  }
   console.log('')
 
-  console.log('2. DNS resolution')
+  // --- 2. DNS resolution ---
+  console.log(c.bold('2. DNS resolution'))
   try {
-    const lookup4 = dns.lookup(host, { family: 4 }).catch(() => null)
-    const lookup6 = dns.lookup(host, { family: 6 }).catch(() => null)
+    const lookup4 = dns.lookup(host, { family: 4 }).then(r => r).catch(() => null)
+    const lookup6 = dns.lookup(host, { family: 6 }).then(r => r).catch(() => null)
     const [addr4, addr6] = await Promise.all([lookup4, lookup6])
-    if (addr4) console.log('   IPv4:', addr4.address)
-    else console.log('   IPv4: (failed or no A record)')
-    if (addr6) console.log('   IPv6:', addr6.address)
-    else console.log('   IPv6: (failed or no AAAA record)')
+    if (addr4) console.log('   IPv4 (A):', c.green(addr4.address))
+    else console.log('   IPv4 (A):', c.red('failed or no A record'))
+    if (addr6) console.log('   IPv6 (AAAA):', c.green(addr6.address))
+    else console.log('   IPv6 (AAAA):', c.red('failed or no AAAA record'))
     if (!addr4 && !addr6) {
-      console.error('   FAIL: No IP address found for host. This often means:')
+      console.error('')
+      console.error(c.red('   FAIL: No IP address found for host.'))
+      console.error('   Common causes:')
       console.error('   - Typo in hostname (e.g. wrong project ref in db.XXX.supabase.co)')
-      console.error('   - Supabase direct connection uses IPv6 by default; your network may not resolve it.')
-      console.error('   FIX: Use the Session pooler URI from Supabase Dashboard → Connect → Session mode.')
-      console.error('   It uses host aws-0-<region>.pooler.supabase.com and supports IPv4.')
+      console.error('   - Direct connection (db.XXX.supabase.co) is IPv6-only; your network may not resolve it.')
+      console.error('')
+      console.error(c.bold('   FIX: Use the Session pooler URI (see step 4 below).'))
     }
   } catch (e) {
-    console.error('   FAIL:', e.message)
+    console.error(c.red('   FAIL:'), e.message)
     if (e.code === 'ENOTFOUND') {
       console.error('   ENOTFOUND = DNS could not resolve the hostname.')
-      console.error('   - Check the host in your DATABASE_URL matches Supabase Dashboard.')
-      console.error('   - For direct connection (db.XXX.supabase.co), try Session pooler instead (pooler.supabase.com).')
+      console.error('   For db.XXX.supabase.co, switch to Session pooler (aws-0-REGION.pooler.supabase.com).')
     }
   }
   console.log('')
 
-  console.log('3. TCP connection to ' + host + ':' + port)
+  // --- 3. TCP connectivity ---
+  console.log(c.bold('3. TCP connection to ' + host + ':' + port))
   try {
     await tcpConnect(host, port)
-    console.log('   OK: TCP connection succeeded.')
+    console.log('   Result:', c.green('OK — TCP connection succeeded'))
   } catch (e) {
-    console.error('   FAIL:', e.message)
+    console.log('   Result:', c.red('FAIL — ' + (e.message || e.code)))
     if (e.code === 'ENOTFOUND') {
-      console.error('   Fix: Use Session pooler connection string (IPv4-friendly).')
-    } else if (e.code === 'ETIMEDOUT' || e.message.includes('timeout')) {
+      console.error(c.yellow('   Fix: Use Session pooler connection string (IPv4-friendly).'))
+    } else if (e.code === 'ETIMEDOUT' || (e.message && e.message.includes('timeout'))) {
       console.error('   Fix: Check firewall/VPN; ensure port', port, 'is allowed outbound.')
     }
   }
   console.log('')
 
-  console.log('4. PostgreSQL connection (with SSL for Supabase)')
-  const useSsl = /supabase\.co|pooler\.supabase\.com/.test(host)
+  // --- 4. PostgreSQL connection ---
+  console.log(c.bold('4. PostgreSQL connection'))
+  const useSsl = databaseUrl.includes('sslmode=require') || /supabase\.co|pooler\.supabase\.com/.test(host)
   const client = new Client({
     connectionString: databaseUrl,
     connectionTimeoutMillis: timeout,
@@ -136,23 +153,33 @@ async function main() {
   try {
     await client.connect()
     const res = await client.query('SELECT current_database(), current_user')
-    console.log('   OK: Connected to database:', res.rows[0].current_database, 'as', res.rows[0].current_user)
+    console.log('   Result:', c.green('OK — Connected'))
+    console.log('   Database:', res.rows[0].current_database, '| User:', res.rows[0].current_user)
     await client.end()
   } catch (e) {
-    console.error('   FAIL:', e.message)
+    console.log('   Result:', c.red('FAIL — ' + (e.message || e.code)))
     if (e.code === 'ENOTFOUND') {
       console.error('')
-      console.error('   >>> Use the SESSION POOLER URI to fix ENOTFOUND <<<')
-      console.error('   1. Open Supabase Dashboard → your project.')
-      console.error('   2. Click "Connect" → under "Connection string" choose "Session" (or "URI").')
-      console.error('   3. Copy the URI; it should look like:')
-      console.error('      postgres://postgres.PROJECT_REF:PASSWORD@aws-0-REGION.pooler.supabase.com:5432/postgres')
-      console.error('   4. Put it in .env as DATABASE_URL=... (replace PASSWORD with your DB password).')
+      console.error(c.bold('   >>> Use the SESSION POOLER URI to fix ENOTFOUND <<<'))
+      console.error('')
+      console.error('   Exact steps:')
+      console.error('   1. Open Supabase Dashboard: https://supabase.com/dashboard')
+      console.error('   2. Select your project')
+      console.error('   3. Click the "Connect" button (top of the page)')
+      console.error('   4. Under "Connection string", select "Session" (not "Direct")')
+      console.error('   5. Copy the URI. Host should be: aws-0-<region>.pooler.supabase.com')
+      console.error('   6. In .env set: DATABASE_URL=postgresql://postgres.PROJECT_REF:YOUR_DB_PASSWORD@aws-0-REGION.pooler.supabase.com:5432/postgres')
+      console.error('   7. Replace YOUR_DB_PASSWORD with your database password (Project Settings → Database)')
+      console.error('')
+      console.error('   Connection settings: https://supabase.com/dashboard/project/_/settings/database')
     }
     process.exitCode = 1
   }
   console.log('')
-  console.log('=== End diagnostic ===')
+  console.log(c.bold('=== End diagnostic ==='))
+  if (process.exitCode === 1) {
+    console.error(c.yellow('Run "npm run db:diagnose" again after updating .env with the Session pooler URI.'))
+  }
 }
 
 main().catch((err) => {
