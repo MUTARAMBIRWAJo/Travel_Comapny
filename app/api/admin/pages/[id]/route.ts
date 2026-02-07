@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { requireAdmin } from '../../../../../lib/admin-auth'
+import { requireAdmin, getCurrentUserFromCookie } from '../../../../../lib/admin-auth'
 import { logAuditEvent } from '../../../../../lib/audit'
+
+function normalizeSection(s: any) {
+  return {
+    type: s.type || s.section_type || 'text',
+    content_json: s.content_json || (s.content_en != null ? { text: s.content_en } : {}),
+  }
+}
 
 export async function GET(request: any, context: any) {
       const authErr = await requireAdmin()
@@ -14,10 +21,13 @@ export async function GET(request: any, context: any) {
 
       const { data: page, error } = await supabase.from('cms_pages').select('*').eq('id', id).maybeSingle()
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      if (!page) return NextResponse.json({ error: 'Page not found' }, { status: 404 })
 
-      const { data: sections } = await supabase.from('cms_page_sections').select('*').eq('page_id', id).order('order_index', { ascending: true })
+      const { data: rawSections } = await supabase.from('cms_page_sections').select('*').eq('page_id', id).order('order_index', { ascending: true })
+      const sections = (rawSections || []).map(normalizeSection)
+      const pageForEditor = { ...page, title: page.title || (page as any).title_en, slug: page.page_key || (page as any).slug }
 
-      return NextResponse.json({ page, sections })
+      return NextResponse.json({ page: pageForEditor, sections })
 }
 
 export async function PUT(request: any, context: any) {
@@ -44,18 +54,40 @@ export async function PUT(request: any, context: any) {
       const { data: updated, error } = await supabase.from('cms_pages').update(updates).eq('id', id).select().maybeSingle()
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-      // Replace sections if provided
-      if (sections) {
+      // Replace sections if provided (write type + section_type, content_json for compatibility)
+      if (sections && Array.isArray(sections)) {
             await supabase.from('cms_page_sections').delete().eq('page_id', id)
-            const insertSections = sections.map((s: any, i: number) => ({ page_id: id, type: s.type, content_json: s.content_json || s.content || {}, order_index: i }))
+            const insertSections = sections.map((s: any, i: number) => ({
+              page_id: id,
+              type: s.type || 'text',
+              content_json: s.content_json || s.content || {},
+              order_index: i,
+            }))
             if (insertSections.length > 0) await supabase.from('cms_page_sections').insert(insertSections)
       }
 
-      // Save version
-      const pageJson = { page: updated, sections }
-      await supabase.from('cms_page_versions').insert({ page_id: id, data: pageJson, created_by: null })
+      const pageKey = (updated?.page_key || slug || updated?.slug) as string
+      if (pageKey) {
+            const adminUser = await getCurrentUserFromCookie()
+            const { data: versionRow } = await supabase.from('cms_page_versions').insert({
+              page_key: pageKey,
+              title_en: updated?.title || (updated as any)?.title_en,
+              slug: pageKey,
+              content_en: null,
+              seo_title: updated?.seo_title ?? (updated as any)?.seo_title,
+              seo_description: updated?.seo_description ?? (updated as any)?.seo_description,
+              is_published: status === 'published',
+              published_at: status === 'published' ? new Date() : null,
+              created_by: adminUser?.id ?? null,
+            }).select().maybeSingle()
 
-      await logAuditEvent({ entityType: 'page' as any, entityId: id, action: 'status_changed', metadata: { before, after: updated } as any })
+            if (status === 'published' && versionRow?.id) {
+              await supabase.from('cms_page_versions').update({ is_published: false }).eq('page_key', pageKey).neq('id', versionRow.id)
+              await supabase.from('cms_page_versions').update({ is_published: true, published_at: new Date() }).eq('id', versionRow.id)
+            }
+      }
+
+      await logAuditEvent({ entityType: 'page' as any, entityId: id, action: 'update', metadata: { before, after: updated } as any })
 
       return NextResponse.json({ page: updated })
 }

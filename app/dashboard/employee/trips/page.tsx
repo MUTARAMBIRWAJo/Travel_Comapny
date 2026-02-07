@@ -47,7 +47,10 @@ export default function EmployeeTripsPage() {
                   <Badge variant={trip.status === "approved" ? "default" : "secondary"}>
                     {trip.status}
                   </Badge>
-                  <Link href="/dashboard/employee/itineraries">
+                  <Link href={`/dashboard/employee/trips/${trip.id}`}>
+                    <Button variant="outline" size="sm">View details</Button>
+                  </Link>
+                  <Link href={`/dashboard/employee/itineraries?tripId=${trip.id}`}>
                     <Button variant="outline" size="sm">Itinerary</Button>
                   </Link>
                 </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Users, FileText, Settings, LogOut, Plane, BarChart3, MessageSquare, Leaf, Shield, Building, DollarSign, ClipboardList } from "lucide-react"
+import { LayoutDashboard, Users, FileText, Settings, LogOut, Plane, BarChart3, MessageSquare, Leaf, Shield, Building, DollarSign, ClipboardList, ScrollText, Handshake } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -18,6 +18,8 @@ const dashboardNavs = {
     { label: "Messages", href: "/dashboard/admin/messages", icon: MessageSquare },
     { label: "Officers", href: "/dashboard/admin/officers", icon: Users },
     { label: "Currency", href: "/dashboard/admin/currency", icon: DollarSign },
+    { label: "Audit Logs", href: "/dashboard/admin/audit", icon: ScrollText },
+    { label: "Partners", href: "/dashboard/admin/partners", icon: Handshake },
     { label: "Analytics", href: "/dashboard/admin/analytics", icon: BarChart3 },
     { label: "Settings", href: "/dashboard/admin/settings", icon: Settings },
   ],

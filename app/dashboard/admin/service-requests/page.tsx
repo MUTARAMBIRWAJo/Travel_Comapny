@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CheckCircle, Clock, AlertCircle, FileText, Download, MessageSquare } from 'lucide-react'
 import { ConversationChat } from '@/components/ConversationChat'
+import { IntelligenceSummary } from '@/components/intelligence-summary'
 
 export default function ServiceRequestsPage() {
   const [requests, setRequests] = useState<any[]>([])
@@ -340,6 +341,18 @@ export default function ServiceRequestsPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Intelligence Summary */}
+              <IntelligenceSummary
+                request={{
+                  id: selectedRequest.id,
+                  destination: selectedRequest.destination,
+                  travel_date: selectedRequest.travel_date,
+                  budget_usd: selectedRequest.budget_usd,
+                  user_id: selectedRequest.user_id,
+                  company_id: selectedRequest.company_id,
+                }}
+              />
 
               {/* Documents */}
               {selectedRequest.documents && selectedRequest.documents.length > 0 && (

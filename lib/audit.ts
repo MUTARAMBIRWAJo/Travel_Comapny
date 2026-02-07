@@ -10,6 +10,8 @@ export type AuditAction =
   | "payment"
   | "policy_override"
   | "document_uploaded"
+  | "suspend"
+  | "activate"
 
 export interface AuditLogInput {
   tenantId?: string | null
@@ -115,13 +117,14 @@ export function auditLogsToCSV(logs: any[]) {
     "actor_id",
     "from_status",
     "to_status",
+    "metadata",
     "created_at",
   ]
   const rows = logs.map((l) =>
     headers
       .map((h) => {
-        const v = l[h] ?? l[h.replace(/_([a-z])/g, (_, c) => c.toUpperCase())] ?? ""
-        // Escape double quotes
+        let v = l[h] ?? l[h.replace(/_([a-z])/g, (_, c) => c.toUpperCase())] ?? ""
+        if (h === "metadata" && v && typeof v === "object") v = JSON.stringify(v)
         return `"${String(v).replace(/"/g, '""')}"`
       })
       .join(","),

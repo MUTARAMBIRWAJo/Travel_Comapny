@@ -1,11 +1,14 @@
-require('dotenv').config({ path: '.local.env' });
+const path = require('path');
+// Load .env first (canonical), then .local.env (local overrides)
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.local.env') });
 const { Client } = require('pg');
 const bcrypt = require('bcryptjs');
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
 
 if (!databaseUrl) {
-  console.error('Missing DATABASE_URL environment variable');
+  console.error('Missing DATABASE_URL or SUPABASE_DB_URL. Add to .env or .local.env.');
   process.exit(1);
 }
 

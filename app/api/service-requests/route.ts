@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { canTransition, REQUEST_STATUSES } from "@/lib/request-status"
 import { logAuditEvent } from "@/lib/audit"
+import { emitWorkflowEvent } from "@/lib/workflow"
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -198,6 +199,15 @@ export async function POST(request: NextRequest) {
       actorId: data.user_id || null,
     })
 
+    if (initialStatus === "submitted") {
+      await emitWorkflowEvent({
+        entity_type: "service_request",
+        entity_id: data.id,
+        event_type: "request_submitted",
+        payload: { destination: data.destination, user_id: data.user_id },
+      })
+    }
+
     return NextResponse.json({
       success: true,
       id: data?.id,
@@ -333,6 +343,22 @@ export async function PATCH(request: NextRequest) {
       actorId: resolvedActorId,
       metadata: auditAction === "rejected" ? { rejectionReason } : undefined,
     })
+
+    if (auditAction === "approved") {
+      await emitWorkflowEvent({
+        entity_type: "service_request",
+        entity_id: id,
+        event_type: "approval_granted",
+        payload: { approvedBy: resolvedActorId },
+      })
+    } else if (auditAction === "rejected") {
+      await emitWorkflowEvent({
+        entity_type: "service_request",
+        entity_id: id,
+        event_type: "approval_rejected",
+        payload: { rejectionReason },
+      })
+    }
 
     return NextResponse.json({ success: true, request: updated })
   } catch (error) {

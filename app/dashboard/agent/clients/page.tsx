@@ -45,9 +45,14 @@ export default function AgentClientsPage() {
                     </p>
                   </div>
                 </div>
-                <Link href="/dashboard/agent/messages">
-                  <Button variant="outline" size="sm">Message</Button>
-                </Link>
+                <div className="flex gap-2">
+                  <Link href={`/dashboard/agent/clients/${c.id}`}>
+                    <Button variant="outline" size="sm">View</Button>
+                  </Link>
+                  <Link href={`/dashboard/agent/messages?clientId=${c.id}`}>
+                    <Button variant="outline" size="sm">Message</Button>
+                  </Link>
+                </div>
               </div>
             ))}
           </div>

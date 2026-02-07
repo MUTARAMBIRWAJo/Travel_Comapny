@@ -13,6 +13,8 @@ export default function AdminSiteSettingsPage() {
       const [editing, setEditing] = React.useState<string | null>(null)
       const [editValue, setEditValue] = React.useState('')
       const [error, setError] = React.useState<string | null>(null)
+      const [addOpen, setAddOpen] = React.useState(false)
+      const [newSetting, setNewSetting] = React.useState({ key: '', value: '', type: 'string', description: '' })
 
       React.useEffect(() => {
             fetchSettings()
@@ -57,6 +59,28 @@ export default function AdminSiteSettingsPage() {
             setEditValue(setting.value || '')
       }
 
+      async function addSetting(e: React.FormEvent) {
+            e.preventDefault()
+            setError(null)
+            try {
+                  const res = await fetch('/api/admin/site-settings', {
+                        method: 'POST',
+                        body: JSON.stringify(newSetting),
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                  })
+                  const json = await res.json()
+                  if (!res.ok) setError(json.error || 'Failed to add')
+                  else {
+                        setNewSetting({ key: '', value: '', type: 'string', description: '' })
+                        setAddOpen(false)
+                        fetchSettings()
+                  }
+            } catch (err: any) {
+                  setError(err.message)
+            }
+      }
+
       function renderValue(setting: any) {
             if (setting.type === 'boolean') {
                   return setting.value === 'true' ? 'Yes' : 'No'
@@ -75,6 +99,31 @@ export default function AdminSiteSettingsPage() {
                   </div>
 
                   {error && <div className="text-destructive">{error}</div>}
+
+                  <div className="flex gap-2">
+                        <Button onClick={() => setAddOpen(true)} className="btn-primary">Add Setting</Button>
+                  </div>
+
+                  {addOpen && (
+                        <form onSubmit={addSetting} className="p-4 bg-muted rounded-lg space-y-2">
+                              <h3 className="font-semibold">New setting</h3>
+                              <div className="flex flex-wrap gap-2">
+                                    <Input placeholder="Key" value={newSetting.key} onChange={(e) => setNewSetting({ ...newSetting, key: e.target.value })} required />
+                                    <Input placeholder="Value" value={newSetting.value} onChange={(e) => setNewSetting({ ...newSetting, value: e.target.value })} />
+                                    <select className="border p-2 rounded" value={newSetting.type} onChange={(e) => setNewSetting({ ...newSetting, type: e.target.value })}>
+                                          <option value="string">string</option>
+                                          <option value="number">number</option>
+                                          <option value="boolean">boolean</option>
+                                          <option value="json">json</option>
+                                    </select>
+                                    <Input placeholder="Description" value={newSetting.description} onChange={(e) => setNewSetting({ ...newSetting, description: e.target.value })} />
+                              </div>
+                              <div className="flex gap-2">
+                                    <Button type="submit">Add</Button>
+                                    <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+                              </div>
+                        </form>
+                  )}
 
                   {/* Settings List */}
                   <Card>

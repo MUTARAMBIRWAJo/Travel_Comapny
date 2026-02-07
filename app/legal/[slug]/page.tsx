@@ -1,63 +1,171 @@
+import { createClient } from "@supabase/supabase-js"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { notFound } from "next/navigation"
+import {
+  LEGAL_DEFAULTS,
+  LEGAL_PAGE_SLUGS,
+  type LegalSlug,
+} from "@/lib/legal-defaults"
 
-const LEGAL_PAGES: Record<string, { title: string; description: string }> = {
-  "travel-liability-disclaimer": {
-    title: "Travel Liability Disclaimer",
-    description: "We-Of-You Travel & Experiences provides travel planning and assistance. Travel involves inherent risks. We are not liable for events outside our control including but not limited to visa refusals, flight changes, natural disasters, or government actions. Travelers are responsible for their own travel insurance and compliance with destination requirements.",
-  },
-  "data-protection-notice": {
-    title: "Data Protection Notice",
-    description: "We process your personal data in accordance with applicable data protection laws. We collect only what is necessary to provide our services, process bookings, and communicate with you. We do not sell your data. You have rights to access, correct, and request deletion of your data. For full details see our Privacy Policy.",
-  },
-  "cookies-policy": {
-    title: "Cookies Policy",
-    description: "Our website uses cookies to improve your experience, remember your preferences, and understand how the site is used. Essential cookies are required for the site to function. Optional cookies may be used for analytics. You can manage cookie preferences in your browser settings.",
-  },
-  "corporate-travel-policy-template": {
-    title: "Corporate Travel Policy Template",
-    description: "We can help your organization define or refine a corporate travel policy. Our template covers approval workflows, booking channels, expense limits, duty of care, and sustainability guidelines. Contact us for a tailored template for your company.",
-  },
-  "government-regulatory-notice": {
-    title: "Government & Regulatory Notice",
-    description: "We operate in compliance with applicable travel, tourism, and business regulations. Travelers are responsible for obtaining required visas, vaccinations, and complying with entry requirements of their destination. We provide assistance and information but do not guarantee approval by any government or authority.",
-  },
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  if (!LEGAL_PAGE_SLUGS.includes(slug as LegalSlug)) {
+    return { title: "Page not found" }
+  }
+  const cms = await getCmsLegalPage(slug)
+  const def = LEGAL_DEFAULTS[slug as LegalSlug]
+  const title = cms?.seoTitle || cms?.title || def.seoTitle
+  const description = (cms?.seoDescription || def.seoDescription).slice(0, 160)
+  return { title, description }
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const page = LEGAL_PAGES[slug]
-  if (!page) return { title: "Page not found" }
+async function getCmsLegalPage(slug: string) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return null
+
+  const supabase = createClient(url, key)
+  const { data: version } = await supabase
+    .from("cms_page_versions")
+    .select("title_en, content_en, seo_title, seo_description, published_at, created_at")
+    .eq("page_key", slug)
+    .eq("is_published", true)
+    .order("published_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!version) return null
+
+  const { data: pageBase } = await supabase
+    .from("cms_pages")
+    .select("id")
+    .eq("page_key", slug)
+    .maybeSingle()
+
+  let sections: { type: string; content_json: Record<string, unknown> }[] = []
+  if (pageBase?.id) {
+    const { data: raw } = await supabase
+      .from("cms_page_sections")
+      .select("type, section_type, content_json, content_en")
+      .eq("page_id", pageBase.id)
+      .order("order_index", { ascending: true })
+    sections = (raw || []).map((s) => ({
+      type: s.type || s.section_type || "text",
+      content_json: s.content_json || (s.content_en != null ? { text: s.content_en } : {}),
+    }))
+  }
+
   return {
-    title: `${page.title} - We-Of-You Travel & Experiences`,
-    description: page.description.slice(0, 160),
+    title: version.title_en,
+    content: version.content_en,
+    seoTitle: version.seo_title,
+    seoDescription: version.seo_description,
+    lastUpdated: version.published_at || version.created_at,
+    sections,
   }
 }
 
-export default async function LegalPage({ params }: { params: Promise<{ slug: string }> }) {
+function renderContent(content: string) {
+  return content.split(/\n\n+/).map((block, i) => {
+    const trimmed = block.trim()
+    if (!trimmed) return null
+    if (/^\*\*[^*]+\*\*/.test(trimmed)) {
+      return (
+        <h2 key={i} className="text-lg font-semibold mt-6 mb-2">
+          {trimmed.replace(/\*\*/g, "")}
+        </h2>
+      )
+    }
+    return (
+      <p key={i} className="mb-4 text-muted-foreground">
+        {trimmed}
+      </p>
+    )
+  })
+}
+
+export default async function LegalPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
   const { slug } = await params
-  const page = LEGAL_PAGES[slug]
-  if (!page) notFound()
+  if (!LEGAL_PAGE_SLUGS.includes(slug as LegalSlug)) notFound()
+
+  const cms = await getCmsLegalPage(slug)
+  const def = LEGAL_DEFAULTS[slug as LegalSlug]
+
+  const title = cms?.title || def.title
+  const seoTitle = cms?.seoTitle || def.seoTitle
+  const content = cms?.content ?? def.content
+  const lastUpdated = cms?.lastUpdated
+  const sections = cms?.sections
 
   return (
     <>
       <Navbar />
       <div className="min-h-screen">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <h1 className="section-header mb-8">{page.title}</h1>
-          <div className="space-y-6 text-muted-foreground">
-            <p className="text-lg">{page.description}</p>
-            <p>
-              For more information, please see our{" "}
-              <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a> and{" "}
-              <a href="/terms" className="text-primary hover:underline">Terms & Conditions</a>, or{" "}
-              <a href="/contact" className="text-primary hover:underline">contact us</a>.
+          <h1 className="section-header mb-4">{title}</h1>
+          {lastUpdated && (
+            <p className="text-sm text-muted-foreground mb-8">
+              Last updated:{" "}
+              {new Date(lastUpdated).toLocaleDateString("en-GB", {
+                dateStyle: "long",
+              })}
             </p>
-          </div>
+          )}
+          {sections && sections.length > 0 ? (
+            <div className="space-y-6 text-muted-foreground">
+              {sections.map((s, i) => (
+                <section key={i}>
+                  {s.type === "text" && (
+                    <p>{(s.content_json as { text?: string }).text}</p>
+                  )}
+                  {s.type === "hero" && (
+                    <>
+                      <h2 className="text-xl font-semibold text-foreground">
+                        {(s.content_json as { title?: string }).title}
+                      </h2>
+                      <p>{(s.content_json as { subtitle?: string }).subtitle}</p>
+                    </>
+                  )}
+                </section>
+              ))}
+            </div>
+          ) : (
+            <div className="prose prose-neutral dark:prose-invert max-w-none">
+              {renderContent(content)}
+            </div>
+          )}
+          <p className="mt-10 text-sm text-muted-foreground">
+            For more information, see our{" "}
+            <a href="/legal/privacy-policy" className="text-primary hover:underline">
+              Privacy Policy
+            </a>{" "}
+            and{" "}
+            <a href="/legal/terms-and-conditions" className="text-primary hover:underline">
+              Terms & Conditions
+            </a>
+            , or{" "}
+            <a href="/contact" className="text-primary hover:underline">
+              contact us
+            </a>
+            . This content does not constitute legal advice; we recommend independent legal review where appropriate.
+          </p>
         </div>
       </div>
       <Footer />
     </>
   )
+}
+
+export async function generateStaticParams() {
+  return LEGAL_PAGE_SLUGS.map((slug) => ({ slug }))
 }

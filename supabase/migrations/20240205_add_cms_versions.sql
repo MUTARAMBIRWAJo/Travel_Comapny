@@ -1,12 +1,4 @@
--- Add simple content versioning for CMS pages
-CREATE TABLE IF NOT EXISTS public.cms_page_versions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  page_id UUID REFERENCES public.cms_pages(id) ON DELETE CASCADE,
-  version INTEGER NOT NULL DEFAULT 1,
-  data JSONB NOT NULL,
-  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_cms_page_versions_page_id ON public.cms_page_versions(page_id);
-CREATE INDEX IF NOT EXISTS idx_cms_page_versions_created_at ON public.cms_page_versions(created_at DESC);
+-- cms_page_versions is created in 20260205_add_cms_page_versions_and_audit.sql with the
+-- schema used by the app (page_key, title_en, slug, content_en, seo_title, seo_description,
+-- is_published, published_at, created_by). This file is a no-op to preserve migration order.
+SELECT 1;

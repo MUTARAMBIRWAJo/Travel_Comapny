@@ -9,15 +9,23 @@ import { Search, Trash2, Edit } from "lucide-react"
 
 export default function AdminUsersPage() {
   const [users, setUsers] = React.useState<any[]>([])
+  const [organizations, setOrganizations] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(false)
   const [formOpen, setFormOpen] = React.useState(false)
-  const [form, setForm] = React.useState({ email: '', full_name: '', role: 'TRAVEL_AGENT' })
+  const [form, setForm] = React.useState({ email: '', full_name: '', role: 'TRAVEL_AGENT', company_id: '' })
   const [editingUser, setEditingUser] = React.useState<any | null>(null)
-  const [editForm, setEditForm] = React.useState({ full_name: '', role: '', status: '', company_id: '' })
+  const [editForm, setEditForm] = React.useState({ full_name: '', role: '', status: 'active', company_id: '' })
   const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     fetchUsers()
+  }, [])
+
+  React.useEffect(() => {
+    fetch('/api/admin/organizations', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => setOrganizations(d.organizations || []))
+      .catch(() => {})
   }, [])
 
   async function fetchUsers() {
@@ -47,7 +55,7 @@ export default function AdminUsersPage() {
       const json = await res.json()
       if (!res.ok) setError(json.error || 'Failed to create')
       else {
-        setForm({ email: '', full_name: '', role: 'TRAVEL_AGENT' })
+        setForm({ email: '', full_name: '', role: 'TRAVEL_AGENT', company_id: '' })
         setFormOpen(false)
         fetchUsers()
       }
@@ -91,7 +99,12 @@ export default function AdminUsersPage() {
 
   function startEdit(user: any) {
     setEditingUser(user)
-    setEditForm({ full_name: user.full_name || '', role: user.role || '', status: user.status || '', company_id: user.company_id || '' })
+    setEditForm({
+      full_name: user.full_name || '',
+      role: user.role || '',
+      status: user.status || 'active',
+      company_id: user.company_id ?? '',
+    })
   }
 
   return (
@@ -115,15 +128,21 @@ export default function AdminUsersPage() {
       {/* Create user form (simple) */}
       {formOpen && (
         <form onSubmit={createUser} className="p-4 bg-muted rounded">
-          <div className="flex gap-2 mb-2">
+          <div className="flex flex-wrap gap-2 mb-2">
             <Input placeholder="Full name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
             <Input placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            <select className="border p-2" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+            <select className="border p-2 rounded" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
               <option value="ADMIN">ADMIN</option>
               <option value="TRAVEL_AGENT">TRAVEL_AGENT</option>
               <option value="CORPORATE_CLIENT">CORPORATE_CLIENT</option>
               <option value="CORPORATE_EMPLOYEE">CORPORATE_EMPLOYEE</option>
               <option value="INDIVIDUAL_TRAVELER">INDIVIDUAL_TRAVELER</option>
+            </select>
+            <select className="border p-2 rounded" value={form.company_id} onChange={(e) => setForm({ ...form, company_id: e.target.value })}>
+              <option value="">No organization</option>
+              {organizations.map((org) => (
+                <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
             </select>
           </div>
           <div className="flex gap-2">
@@ -137,18 +156,24 @@ export default function AdminUsersPage() {
       {editingUser && (
         <form onSubmit={editUser} className="p-4 bg-muted rounded">
           <h3 className="font-semibold mb-2">Edit User: {editingUser.email}</h3>
-          <div className="flex gap-2 mb-2">
+          <div className="flex flex-wrap gap-2 mb-2">
             <Input placeholder="Full name" value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} />
-            <select className="border p-2" value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}>
+            <select className="border p-2 rounded" value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}>
               <option value="ADMIN">ADMIN</option>
               <option value="TRAVEL_AGENT">TRAVEL_AGENT</option>
               <option value="CORPORATE_CLIENT">CORPORATE_CLIENT</option>
               <option value="CORPORATE_EMPLOYEE">CORPORATE_EMPLOYEE</option>
               <option value="INDIVIDUAL_TRAVELER">INDIVIDUAL_TRAVELER</option>
             </select>
-            <select className="border p-2" value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}>
+            <select className="border p-2 rounded" value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}>
               <option value="active">Active</option>
               <option value="suspended">Suspended</option>
+            </select>
+            <select className="border p-2 rounded" value={editForm.company_id} onChange={(e) => setEditForm({ ...editForm, company_id: e.target.value })}>
+              <option value="">No organization</option>
+              {organizations.map((org) => (
+                <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
             </select>
           </div>
           <div className="flex gap-2">
@@ -177,7 +202,7 @@ export default function AdminUsersPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge variant="secondary">{(user.role || '').replace(/_/g, ' ')}</Badge>
-                    <Badge variant="outline">{user.status}</Badge>
+                    <Badge variant="outline">{user.status || 'active'}</Badge>
                     <span className="text-sm text-muted-foreground">{new Date(user.created_at).toLocaleDateString()}</span>
                     <Button variant="outline" size="sm" onClick={() => startEdit(user)}>
                       <Edit className="w-4 h-4" />
