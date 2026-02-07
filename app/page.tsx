@@ -101,127 +101,113 @@ export default async function Home() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {services.map((service, idx) => {
-                const backgroundImages = [
-                  "https://images.unsplash.com/photo-1569163139394-de4798aa62b1?w=400&h=300&fit=crop",
-                  "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&h=300&fit=crop",
-                  "https://images.unsplash.com/photo-1552410260-7ad93519e72a?w=400&h=300&fit=crop",
-                  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
-                ]
-
-                return (
-                  <Card key={service.id} className="card-hover flex flex-col overflow-hidden group">
-                    <div className="relative h-40 bg-gradient-to-br from-primary/20 to-secondary/20 overflow-hidden">
-                      <div className="absolute inset-0">
-                        <Image
-                          src={backgroundImages[idx % backgroundImages.length] || "/placeholder.svg"}
-                          alt={service.title_en}
-                          fill
-                          sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
-                          priority={idx < 2}
-                          className="object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {services.map((service, idx) => (
+                <Card key={service.id} className="card-hover flex flex-col overflow-hidden group">
+                  {/* Image at top of card */}
+                  <div className="relative h-48 overflow-hidden">
+                    {service.image_url ? (
+                      <Image
+                        src={service.image_url}
+                        alt={service.title_en || service.title || 'Service'}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-3xl">✈️</span>
+                        </div>
                       </div>
-                      <div className="absolute inset-0 bg-black/20"></div>
-                    </div>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{service.title_en}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex-1">
-                      <p className="text-sm text-muted-foreground mb-4">{service.short_description_en}</p>
-                      <Link href={`/services/${service.slug}`}>
-                        <Button variant="ghost" size="sm" className="text-primary">
-                          Learn More →
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-                )
-              })}
+                    )}
+                  </div>
+
+                  <CardHeader>
+                    <CardTitle className="text-lg">{service.title_en}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-1">
+                    <p className="text-muted-foreground text-sm mb-4">{service.short_description_en}</p>
+                    <Link href={`/services/${service.slug}`}>
+                      <Button variant="ghost" size="sm" className="text-primary">
+                        Learn More →
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
         </section>
       )}
 
-      {/* Packages Section with Gradient Background */}
+      {/* Featured Packages Section */}
       {packages.length > 0 && (
-        <section className="relative py-20 md:py-28 bg-gradient-to-b from-muted/30 via-background to-muted/20">
-          <div className="absolute inset-0 opacity-5">
-            <svg className="w-full h-full" viewBox="0 0 1200 600" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="wavegradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="currentColor" />
-                  <stop offset="100%" stopColor="currentColor" />
-                </linearGradient>
-              </defs>
-              <path d="M0,300 Q300,150 600,300 T1200,300 L1200,600 L0,600 Z" fill="url(#wavegradient)" />
-            </svg>
-          </div>
-
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="py-20 md:py-28 bg-gradient-to-b from-background via-primary/5 to-background">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="section-header mb-4">Featured Packages</h2>
+              <h2 className="section-header mb-4">Featured Travel Packages</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Explore our carefully planned travel packages for individuals and groups
+                Curated travel experiences for unforgettable journeys
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              {packages.slice(0, 3).map((pkg, idx) => {
-                const packageImages = [
-                  "https://images.unsplash.com/photo-1512453475868-a34c61444ccd?w=500&h=300&fit=crop",
-                  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=300&fit=crop",
-                  "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=500&h=300&fit=crop",
-                ]
-
-                return (
-                  <Card key={pkg.id} className="overflow-hidden card-hover flex flex-col shadow-lg hover:shadow-2xl transition-shadow group">
-                    <div className="w-full h-48 bg-muted relative overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {packages.slice(0, 3).map((pkg, idx) => (
+                <Card key={pkg.id} className="overflow-hidden card-hover flex flex-col shadow-lg hover:shadow-2xl transition-shadow group">
+                  {/* Image at top of card */}
+                  <div className="relative h-64 overflow-hidden">
+                    {pkg.image_url ? (
                       <Image
-                        src={pkg.image_url || packageImages[idx % packageImages.length]}
-                        alt={pkg.title_en}
+                        src={pkg.image_url}
+                        alt={pkg.title_en || pkg.title || 'Package'}
                         fill
-                        sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-                        priority={idx === 0}
-                        className="object-cover group-hover:scale-110 transition-transform duration-300"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
-                    </div>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{pkg.title_en}</CardTitle>
-                      <CardDescription className="flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.3A4.5 4.5 0 1113.5 13H11V9.5a1 1 0 10-2 0V13h-3.5z" />
-                        </svg>
-                        {pkg.duration}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-1 pb-6 flex flex-col justify-between">
-                      <p className="text-sm text-muted-foreground mb-4">{pkg.includes_en}</p>
-                      <div>
-                        <PriceDisplay
-                          priceUSD={pkg.price_usd}
-                          priceRWF={pkg.price_rwf}
-                          className="mb-4"
-                        />
-                        <Link href="/request-service">
-                          <Button className="w-full btn-primary">Book Now</Button>
-                        </Link>
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-4xl">🌍</span>
+                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
+                    )}
+                    {pkg.duration_days && (
+                      <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
+                        {pkg.duration_days} Days
+                      </div>
+                    )}
+                  </div>
+
+                  <CardHeader>
+                    <CardTitle className="text-lg">{pkg.title_en}</CardTitle>
+                    <CardDescription className="flex items-center gap-2">
+                      <span className="flex items-center gap-1">📍 {pkg.destination_country || pkg.destination || 'Various Destinations'}</span>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-1 pb-6 flex flex-col justify-between">
+                    <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{pkg.short_description_en || pkg.description_en}</p>
+
+                    <div className="space-y-3">
+                      <PriceDisplay
+                        priceUSD={Number(pkg.base_price) || 0}
+                        className="justify-center"
+                      />
+
+                      <Link href="/request-service">
+                        <Button className="w-full btn-primary">Book Now</Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
 
             <div className="text-center mt-12">
               <Link href="/packages">
                 <Button size="lg" variant="outline" className="group bg-transparent">
                   View All Packages
-                  <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
+                  <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                 </Button>
               </Link>
             </div>
@@ -231,33 +217,48 @@ export default async function Home() {
 
       {/* Testimonials Section */}
       {testimonials.length > 0 && (
-        <section className="py-20 md:py-28">
+        <section className="py-20 md:py-28 bg-gradient-to-b from-background via-primary/5 to-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="section-header mb-4">Client Testimonials</h2>
+              <h2 className="section-header mb-4">What Our Travelers Say</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Hear from travelers and organizations who trusted us with their journeys
+                Real stories from travelers who experienced Rwanda and beyond with us
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {testimonials.map((testimonial) => (
                 <Card key={testimonial.id} className="card-hover">
                   <CardHeader>
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-xl">
+                        {testimonial.customer_avatar_url ? (
+                          <Image
+                            src={testimonial.customer_avatar_url}
+                            alt={testimonial.customer_name}
+                            width={48}
+                            height={48}
+                            className="rounded-full"
+                          />
+                        ) : (
+                          <span>{testimonial.customer_initials || '👤'}</span>
+                        )}
+                      </div>
                       <div>
                         <CardTitle className="text-lg">{testimonial.customer_name}</CardTitle>
-                        {testimonial.customer_title && (
-                          <CardDescription>{testimonial.customer_title}</CardDescription>
-                        )}
-                        {testimonial.customer_location && (
-                          <CardDescription className="text-xs">{testimonial.customer_location}</CardDescription>
-                        )}
+                        <p className="text-sm text-muted-foreground">{testimonial.customer_role}</p>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="italic text-muted-foreground">&quot;{testimonial.message_en}&quot;</p>
+                    <p className="text-muted-foreground italic">"{testimonial.testimonial_text_en}"</p>
+                    <div className="flex mt-4">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i} className={`text-lg ${i < (testimonial.rating || 5) ? 'text-yellow-500' : 'text-gray-300'}`}>
+                          ★
+                        </span>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -266,61 +267,10 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Trust & Pride Section */}
-      <section className="py-20 md:py-28 bg-primary/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-8 text-center">
-            <div>
-              <h3 className="text-3xl font-bold text-primary mb-2">Rwanda-Based</h3>
-              <p className="text-muted-foreground">Proudly serving travelers from Kigali and across Rwanda</p>
-            </div>
-            <div>
-              <h3 className="text-3xl font-bold text-primary mb-2">Professional Service</h3>
-              <p className="text-muted-foreground">Expert guidance you can trust for every journey</p>
-            </div>
-            <div>
-              <h3 className="text-3xl font-bold text-primary mb-2">Global Reach</h3>
-              <p className="text-muted-foreground">Connections to destinations worldwide and trusted partners</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Currency Converter Section */}
-      <section className="py-20 md:py-28 bg-muted/30">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="section-header mb-4">Plan Your Budget</h2>
-            <p className="text-muted-foreground">
-              Use our currency converter to see prices in your local currency
-            </p>
-          </div>
-          <CurrencyConverter />
-        </div>
-      </section>
+      <CurrencyConverter />
 
-      {/* CTA Section */}
-      <section className="py-20 md:py-28 bg-primary text-primary-foreground">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Start Your Journey?</h2>
-          <p className="text-lg text-primary-foreground/90 mb-8 max-w-2xl mx-auto">
-            Let {brandName} help you plan a safe, affordable, and memorable international travel experience.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/contact">
-              <Button size="lg" variant="secondary">
-                Get in Touch
-              </Button>
-            </Link>
-            <Link href="/services">
-              <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 bg-transparent">
-                Learn More
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
+      {/* Footer */}
       <Footer />
     </>
   )

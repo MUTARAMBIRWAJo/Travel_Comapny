@@ -148,7 +148,7 @@ export async function getServices() {
         .from('cms_services')
         .select('*')
         .eq('status', 'active')
-        .order('order_index', { ascending: true });
+        .order('display_order', { ascending: true });
 
       if (!cmsError && cmsData && cmsData.length > 0) {
         return cmsData;
@@ -162,7 +162,7 @@ export async function getServices() {
         .from('services')
         .select('*')
         .eq('status', 'active')
-        .order('order_index', { ascending: true });
+        .order('display_order', { ascending: true });
 
       if (!servicesError && servicesData && servicesData.length > 0) {
         return servicesData;
@@ -316,7 +316,7 @@ export async function getPackages() {
       .from('packages')
       .select('*')
       .eq('status', 'active')
-      .order('order_index', { ascending: true });
+      .order('created_at', { ascending: false });
 
     if (error) {
       // Silently handle errors (missing tables or columns)

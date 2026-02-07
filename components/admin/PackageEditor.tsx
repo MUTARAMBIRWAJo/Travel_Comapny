@@ -17,8 +17,12 @@ interface Package {
   price_usd: number
   price_rwf: number
   includes_en: string
+  short_description_en?: string
   image_url?: string
   status: "active" | "inactive"
+  featured?: boolean
+  category?: string
+  destination?: string
 }
 
 interface PackageEditorProps {
@@ -26,6 +30,8 @@ interface PackageEditorProps {
   onSave: (data: Package) => void
   onClose: () => void
 }
+
+const categories = ["All", "Adventure", "Family", "Honeymoon", "Cultural", "Luxury"]
 
 export function PackageEditor({ package: pkg, onSave, onClose }: PackageEditorProps) {
   const [formData, setFormData] = useState<Package>(
@@ -40,7 +46,10 @@ export function PackageEditor({ package: pkg, onSave, onClose }: PackageEditorPr
       price_usd: 0,
       price_rwf: 0,
       includes_en: "",
+      short_description_en: "",
       status: "active",
+      category: "All",
+      featured: false,
     }
   )
   const [imagePreview, setImagePreview] = useState<string | null>(pkg?.image_url || null)
@@ -109,6 +118,32 @@ export function PackageEditor({ package: pkg, onSave, onClose }: PackageEditorPr
             />
           </div>
 
+          {/* Category and Destination */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Category</label>
+              <select
+                value={formData.category || "All"}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Destination</label>
+              <input
+                type="text"
+                value={formData.destination || ""}
+                onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="e.g., UAE, Europe"
+              />
+            </div>
+          </div>
+
           {/* Duration */}
           <div>
             <label className="block text-sm font-medium mb-2">Duration</label>
@@ -151,28 +186,51 @@ export function PackageEditor({ package: pkg, onSave, onClose }: PackageEditorPr
             </div>
           </div>
 
-          {/* Description */}
+          {/* Short Description */}
           <div>
-            <label className="block text-sm font-medium mb-2">What&apos;s Included</label>
+            <label className="block text-sm font-medium mb-2">Short Description</label>
+            <textarea
+              value={formData.short_description_en || ""}
+              onChange={(e) => setFormData({ ...formData, short_description_en: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary h-20"
+              placeholder="Brief description shown in cards"
+            />
+          </div>
+
+          {/* What's Included */}
+          <div>
+            <label className="block text-sm font-medium mb-2">What's Included</label>
             <textarea
               value={formData.includes_en}
               onChange={(e) => setFormData({ ...formData, includes_en: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary h-24"
-              placeholder="List what&apos;s included in this package"
+              placeholder="List what's included in this package"
             />
           </div>
 
-          {/* Status */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as "active" | "inactive" })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+          {/* Status and Featured */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as "active" | "inactive" })}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="featured"
+                checked={formData.featured || false}
+                onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                className="mr-2"
+              />
+              <label htmlFor="featured" className="text-sm font-medium">Featured Package</label>
+            </div>
           </div>
 
           {/* Actions */}

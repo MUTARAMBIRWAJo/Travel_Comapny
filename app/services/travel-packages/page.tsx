@@ -5,51 +5,41 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, Calendar, DollarSign, Users, CheckCircle, ArrowRight, Star } from "lucide-react"
 import Link from "next/link"
+import { getPackages, formatCurrency, convertCurrency } from "@/lib/supabaseClient"
+
+interface PackageDisplay {
+      id: string
+      name: string
+      destination: string
+      duration: string
+      price: string
+      rating: number
+      highlights: string[]
+      includes: string[]
+      image_url?: string
+}
 
 export const metadata = {
       title: "Travel Packages - We-Of-You Travel & Experiences",
       description: "Curated travel packages for every budget and interest. Customizable itineraries for individuals, families, and groups with expert local knowledge.",
 }
 
-export default function TravelPackagesPage() {
-      const packages = [
-            {
-                  name: "Rwanda Adventure",
-                  destination: "Rwanda",
-                  duration: "5 Days / 4 Nights",
-                  price: "From $1,200",
-                  rating: 4.8,
-                  highlights: ["Volcanoes National Park", "Gorilla Trekking", "Kigali City Tour"],
-                  includes: ["Flights", "Accommodation", "Guided Tours", "Meals"]
-            },
-            {
-                  name: "Kenya Safari",
-                  destination: "Kenya",
-                  duration: "7 Days / 6 Nights",
-                  price: "From $2,500",
-                  rating: 4.9,
-                  highlights: ["Masai Mara", "Amboseli National Park", "Maasai Cultural Visit"],
-                  includes: ["Flights", "Safari Lodge", "Game Drives", "All Meals"]
-            },
-            {
-                  name: "Tanzania Northern Circuit",
-                  destination: "Tanzania",
-                  duration: "8 Days / 7 Nights",
-                  price: "From $3,200",
-                  rating: 4.7,
-                  highlights: ["Serengeti", "Ngorongoro Crater", "Tarangire National Park"],
-                  includes: ["Flights", "Luxury Camping", "Professional Guide", "All Meals"]
-            },
-            {
-                  name: "Uganda Wildlife Tour",
-                  destination: "Uganda",
-                  duration: "6 Days / 5 Nights",
-                  price: "From $1,800",
-                  rating: 4.6,
-                  highlights: ["Bwindi Forest", "Gorilla Tracking", "Queen Elizabeth Park"],
-                  includes: ["Flights", "Lodges", "Guided Tours", "Meals"]
-            }
-      ]
+export default async function TravelPackagesPage() {
+      // Fetch packages from database
+      const packagesData = await getPackages() || []
+
+      // Filter active packages
+      const packages: PackageDisplay[] = packagesData.filter((p: any) => p.status === 'active').map((pkg: any) => ({
+            id: pkg.id,
+            name: pkg.title_en,
+            destination: pkg.destination || 'Various Destinations',
+            duration: pkg.duration || 'Flexible',
+            price: `From ${pkg.price_usd || 0}`,
+            rating: 4.8,
+            highlights: (pkg.includes_en || '').split(',').map((s: string) => s.trim()).filter(Boolean),
+            includes: ['Flights', 'Accommodation', 'Guided Tours', 'Meals'].slice(0, 4),
+            image_url: pkg.image_url
+      }))
 
       const customization = [
             {
@@ -179,7 +169,7 @@ export default function TravelPackagesPage() {
                                     </div>
 
                                     <div className="grid md:grid-cols-2 gap-8">
-                                          {packages.map((pkg, idx) => (
+                                          {packages.map((pkg: PackageDisplay, idx: number) => (
                                                 <Card key={idx} className="card-hover">
                                                       <CardHeader>
                                                             <div className="flex items-start justify-between">
@@ -209,7 +199,7 @@ export default function TravelPackagesPage() {
                                                                   <div>
                                                                         <h4 className="font-medium mb-2">Highlights:</h4>
                                                                         <ul className="text-sm text-muted-foreground space-y-1">
-                                                                              {pkg.highlights.map((highlight, i) => (
+                                                                              {pkg.highlights.map((highlight: string, i: number) => (
                                                                                     <li key={i} className="flex items-center gap-2">
                                                                                           <span className="text-primary">•</span>
                                                                                           {highlight}
@@ -221,7 +211,7 @@ export default function TravelPackagesPage() {
                                                                   <div>
                                                                         <h4 className="font-medium mb-2">Includes:</h4>
                                                                         <div className="flex flex-wrap gap-2">
-                                                                              {pkg.includes.map((item, i) => (
+                                                                              {pkg.includes.map((item: string, i: number) => (
                                                                                     <Badge key={i} variant="secondary" className="text-xs">
                                                                                           {item}
                                                                                     </Badge>
