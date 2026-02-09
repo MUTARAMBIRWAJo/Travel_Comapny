@@ -2,10 +2,10 @@
 
 import { useRef, useState, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import * as THREE from "three";
+import { Mesh, ShaderMaterial, Color, Points, DoubleSide } from "three";
 
 function GlowingSphere() {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const meshRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const { viewport, mouse } = useThree();
 
@@ -27,12 +27,12 @@ function GlowingSphere() {
 
   // Custom shader material for glow effect
   const glowMaterial = useMemo(() => {
-    return new THREE.ShaderMaterial({
+    return new ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
         uHovered: { value: 0 },
-        uColor1: { value: new THREE.Color("#00ffff") },
-        uColor2: { value: new THREE.Color("#ff00ff") },
+        uColor1: { value: new Color("#00ffff") },
+        uColor2: { value: new Color("#ff00ff") },
       },
       vertexShader: `
         varying vec3 vNormal;
@@ -78,13 +78,13 @@ function GlowingSphere() {
         }
       `,
       transparent: true,
-      side: THREE.DoubleSide,
+      side: DoubleSide,
     });
   }, []);
 
   // Update shader uniforms
   useFrame((state) => {
-    if (meshRef.current && meshRef.current.material instanceof THREE.ShaderMaterial) {
+    if (meshRef.current && meshRef.current.material instanceof ShaderMaterial) {
       meshRef.current.material.uniforms.uTime.value = state.clock.elapsedTime;
       meshRef.current.material.uniforms.uHovered.value = hovered ? 1 : 0;
     }
@@ -104,7 +104,7 @@ function GlowingSphere() {
 }
 
 function Particles() {
-  const particlesRef = useRef<THREE.Points>(null);
+  const particlesRef = useRef<Points>(null);
   const count = 500;
   const [positions, setPositions] = useState<Float32Array | null>(null);
 
