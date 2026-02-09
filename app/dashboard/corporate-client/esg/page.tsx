@@ -21,7 +21,7 @@ export default function CorporateESGPage() {
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-foreground mb-2">Sustainability & ESG Tracking</h1>
             <p className="text-muted-foreground">
-              Monitor your organization's environmental impact and sustainability initiatives in corporate travel.
+              Monitor your organization&apos;s environmental impact and sustainability initiatives in corporate travel.
             </p>
           </div>
 
@@ -180,7 +180,7 @@ export default function CorporateESGPage() {
             <CardHeader>
               <CardTitle>Corporate ESG Goals</CardTitle>
               <CardDescription>
-                Your organization's sustainability targets and progress
+                Your organization&apos;s sustainability targets and progress
               </CardDescription>
             </CardHeader>
             <CardContent>

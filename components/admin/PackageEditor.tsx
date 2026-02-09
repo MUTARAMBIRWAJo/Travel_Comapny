@@ -199,12 +199,12 @@ export function PackageEditor({ package: pkg, onSave, onClose }: PackageEditorPr
 
           {/* What's Included */}
           <div>
-            <label className="block text-sm font-medium mb-2">What's Included</label>
+            <label className="block text-sm font-medium mb-2">What&apos;s Included</label>
             <textarea
               value={formData.includes_en}
               onChange={(e) => setFormData({ ...formData, includes_en: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary h-24"
-              placeholder="List what's included in this package"
+              placeholder="List what&apos;s included in this package"
             />
           </div>
 

@@ -251,7 +251,7 @@ export default async function Home() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground italic">"{testimonial.testimonial_text_en}"</p>
+                    <p className="text-muted-foreground italic">&quot;{testimonial.testimonial_text_en}&quot;</p>
                     <div className="flex mt-4">
                       {[...Array(5)].map((_, i) => (
                         <span key={i} className={`text-lg ${i < (testimonial.rating || 5) ? 'text-yellow-500' : 'text-gray-300'}`}>

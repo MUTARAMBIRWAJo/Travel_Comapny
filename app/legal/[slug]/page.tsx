@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { notFound } from "next/navigation"
+import Link from "next/link"
 import {
   LEGAL_DEFAULTS,
   LEGAL_PAGE_SLUGS,
@@ -146,17 +147,17 @@ export default async function LegalPage({
           )}
           <p className="mt-10 text-sm text-muted-foreground">
             For more information, see our{" "}
-            <a href="/legal/privacy-policy" className="text-primary hover:underline">
+            <Link href="/legal/privacy-policy" className="text-primary hover:underline">
               Privacy Policy
-            </a>{" "}
+            </Link>{" "}
             and{" "}
-            <a href="/legal/terms-and-conditions" className="text-primary hover:underline">
+            <Link href="/legal/terms-and-conditions" className="text-primary hover:underline">
               Terms & Conditions
-            </a>
+            </Link>
             , or{" "}
-            <a href="/contact" className="text-primary hover:underline">
+            <Link href="/contact" className="text-primary hover:underline">
               contact us
-            </a>
+            </Link>
             . This content does not constitute legal advice; we recommend independent legal review where appropriate.
           </p>
         </div>

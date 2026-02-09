@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -106,16 +106,17 @@ function GlowingSphere() {
 function Particles() {
   const particlesRef = useRef<THREE.Points>(null);
   const count = 500;
+  const [positions, setPositions] = useState<Float32Array | null>(null);
 
-  const positions = useMemo(() => {
+  useEffect(() => {
     const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
       pos[i * 3] = (Math.random() - 0.5) * 20;
       pos[i * 3 + 1] = (Math.random() - 0.5) * 20;
       pos[i * 3 + 2] = (Math.random() - 0.5) * 20;
     }
-    return pos;
-  }, []);
+    setPositions(pos);
+  }, [count]);
 
   useFrame((state, delta) => {
     if (particlesRef.current) {
@@ -123,6 +124,8 @@ function Particles() {
       particlesRef.current.rotation.x += delta * 0.05;
     }
   });
+
+  if (!positions) return null;
 
   return (
     <points ref={particlesRef}>
